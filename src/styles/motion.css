@@ -605,25 +605,57 @@
     animation: rise-in 0.8s var(--ease) 0.3s backwards;
   }
 
-  /* ---------- Services: plate first, then the photo prints over it ---------- */
-  .division__media img {
-    animation: print-feed 1.2s var(--ease-print) 0.15s backwards;
+  /* ---------- Services: each plate prints as a separation, then the
+     full-color sheet feeds down over it, C to K ---------- */
+  .plate {
+    animation: rise-in 0.7s var(--ease) backwards;
+    animation-delay: calc(var(--i, 0) * 110ms);
   }
-  .division__media::before {
-    animation: fade-in 0.3s linear backwards, plate-shift 0.7s var(--ease-back) 1.2s backwards;
-  }
-  .division__title {
-    animation: register 1s var(--ease) 0.3s backwards;
-  }
-  .division__summary {
-    animation: rise-in 0.7s var(--ease) 0.5s backwards;
-  }
-  .division__list li {
+  .plate__letter {
     animation: pop-in 0.45s var(--ease-back) backwards;
-    animation-delay: calc(0.65s + var(--i, 0) * 70ms);
+    animation-delay: calc(var(--i, 0) * 110ms + 0.35s);
   }
-  .division__link {
-    animation: rise-in 0.6s var(--ease) 1.05s backwards;
+  .plate__title {
+    animation: register 1s var(--ease) backwards;
+    animation-delay: calc(var(--i, 0) * 110ms + 0.25s);
+  }
+  .plate__color {
+    animation: print-feed 1s var(--ease-print) backwards;
+    animation-delay: calc(var(--i, 0) * 220ms + 1s);
+  }
+
+  /* ---------- Studio: the press run ---------- */
+  /* Each plate flashes past in turn, sliding toward register, then your ink lands. */
+  .plate-run--c,
+  .plate-run--m,
+  .plate-run--y {
+    animation: plate-flash 0.55s var(--ease) both;
+  }
+  .plate-run--c {
+    --dx: -9px;
+    --dy: 5px;
+  }
+  .plate-run--m {
+    --dx: 8px;
+    --dy: -5px;
+    animation-delay: 0.35s;
+  }
+  .plate-run--y {
+    --dx: 4px;
+    --dy: 8px;
+    animation-delay: 0.7s;
+  }
+  .is-printing .plate-run--final {
+    animation: press-plate 0.5s var(--ease) 1.05s both;
+  }
+  .studio__sweep {
+    animation: press-sweep 1.6s var(--ease-print) both;
+  }
+  .is-printed svg {
+    animation: proof-settle 0.5s var(--ease-back);
+  }
+  .art--sketch text {
+    animation: write-on 0.6s var(--ease) backwards;
   }
 
   /* ---------- Product cards are dealt onto the table ---------- */
@@ -968,6 +1000,44 @@
   }
 }
 
+@keyframes press-plate {
+  from {
+    opacity: 0;
+    transform: translate(calc(var(--dx, 0px) * 5), calc(var(--dy, 0px) * 5));
+  }
+  60% {
+    opacity: 1;
+    transform: translate(var(--dx, 0px), var(--dy, 0px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+}
+@keyframes plate-flash {
+  0% {
+    opacity: 0;
+    transform: translate(calc(var(--dx, 0px) * 5), calc(var(--dy, 0px) * 5));
+  }
+  45% {
+    opacity: 1;
+    transform: translate(var(--dx, 0px), var(--dy, 0px));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+}
+@keyframes press-sweep {
+  to {
+    transform: translateX(720px);
+  }
+}
+@keyframes proof-settle {
+  from {
+    scale: 0.985;
+  }
+}
 @keyframes plate-shift {
   from {
     transform: translate(0, 0);

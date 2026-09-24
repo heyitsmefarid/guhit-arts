@@ -15,6 +15,7 @@ const ADMIN_ONLY = new Set([
   'manage-products', // add products, hide or show them in the shop
   'view-customers', // customer list and spending
   'manage-team', // staff accounts and roles
+  'view-reports', // the Reports page and its CSV downloads
 ]);
 
 export const isStaffRole = (role) => STAFF_ROLES.includes(role);

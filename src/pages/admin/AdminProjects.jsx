@@ -4,6 +4,7 @@ import { Search, SearchX, Zap } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
+import ShowMore, { usePaged } from '../../components/admin/ShowMore';
 import { useAdmin } from '../../context/AdminContext';
 import { STATUS_FLOW, statusLabel } from '../../data/statuses';
 import { digitalServices } from '../../data/digitalServices';
@@ -43,6 +44,8 @@ export default function AdminProjects() {
       .filter((p) => service === 'all' || p.serviceId === service)
       .filter((p) => !term || `${p.ref} ${p.title} ${p.customer.name} ${p.serviceName}`.toLowerCase().includes(term));
   }, [projects, status, service, q]);
+
+  const paged = usePaged(shown, `${status}|${service}|${q}`);
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -109,7 +112,7 @@ export default function AdminProjects() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((p) => (
+              {paged.visible.map((p) => (
                 <tr key={p.ref} className={p.status === 'pending' ? 'is-new' : ''}>
                   <td data-label="Request">
                     <Link to={`/admin/projects/${p.ref}`} className="t-title">
@@ -144,6 +147,7 @@ export default function AdminProjects() {
               ))}
             </tbody>
           </table>
+          <ShowMore paged={paged} noun="requests" />
         </div>
       ) : (
         <EmptyState icon={SearchX} title="No requests match" body="Try another search or clear the filters.">

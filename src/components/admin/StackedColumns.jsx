@@ -59,7 +59,8 @@ export default function StackedColumns({ rows, series, format = (v) => v, tickFo
           ))}
         </ul>
       )}
-      <svg width={width} height={height} role="img" aria-label={ariaLabel} className="chart__svg">
+      {/* viewBox lets the chart scale down when printed, where no resize event fires. */}
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel} className="chart__svg">
         {[0, max / 2, max].map((t) => (
           <g key={t}>
             <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} className="chart__grid" />
