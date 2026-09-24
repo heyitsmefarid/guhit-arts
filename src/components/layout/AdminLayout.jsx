@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Boxes, ExternalLink, LayoutDashboard, LogOut, Menu, Package, Search, ShieldCheck, Sparkles, UserCog, Users, X } from 'lucide-react';
+import { Boxes, ChartColumn, ExternalLink, LayoutDashboard, LogOut, Menu, Package, Search, ShieldCheck, Sparkles, UserCog, Users, X } from 'lucide-react';
 import Logo from '../brand/Logo';
 import Avatar from '../ui/Avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +32,7 @@ function AdminShell() {
     { to: '/admin/projects', label: 'Digital Requests', icon: Sparkles, count: counts.projects, hint: 'to review' },
     { to: '/admin/products', label: 'Products & Stock', icon: Boxes, count: counts.products, hint: 'low on stock', warn: true },
     { to: '/admin/customers', label: 'Customers', icon: Users, permission: 'view-customers' },
+    { to: '/admin/reports', label: 'Reports', icon: ChartColumn, permission: 'view-reports' },
     { to: '/admin/team', label: 'Team', icon: UserCog, permission: 'manage-team' },
   ].filter((item) => !item.permission || can(user, item.permission));
 

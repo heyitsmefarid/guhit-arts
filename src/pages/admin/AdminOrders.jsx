@@ -4,6 +4,7 @@ import { Search, SearchX, Truck, Store } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import StatusBadge from '../../components/ui/StatusBadge';
 import EmptyState from '../../components/ui/EmptyState';
+import ShowMore, { usePaged } from '../../components/admin/ShowMore';
 import { useAdmin } from '../../context/AdminContext';
 import { STATUS_FLOW, statusLabel } from '../../data/statuses';
 import { itemsSummary } from '../../utils/admin';
@@ -37,6 +38,8 @@ export default function AdminOrders() {
           `${o.ref} ${o.customer.name} ${o.customer.phone} ${o.items.map((i) => i.name).join(' ')}`.toLowerCase().includes(term)
       );
   }, [orders, status, q, fulfillment]);
+
+  const paged = usePaged(shown, `${status}|${q}|${fulfillment}`);
 
   const filters = [
     { id: 'all', label: 'All' },
@@ -98,7 +101,7 @@ export default function AdminOrders() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((o) => (
+              {paged.visible.map((o) => (
                 <tr key={o.ref} className={o.status === 'pending' ? 'is-new' : ''}>
                   <td data-label="Order">
                     <Link to={`/admin/orders/${o.ref}`} className="t-ref num">
@@ -134,6 +137,7 @@ export default function AdminOrders() {
               ))}
             </tbody>
           </table>
+          <ShowMore paged={paged} noun="orders" />
         </div>
       ) : (
         <EmptyState icon={SearchX} title="No orders match" body="Try another search or clear the filters.">

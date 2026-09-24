@@ -17,7 +17,8 @@ const ACCESS = [
   { task: 'Adjust stock counts', admin: true, staff: true },
   { task: 'Set product prices and digital quotations', admin: true, staff: false },
   { task: 'Add products, or hide them from the shop', admin: true, staff: false },
-  { task: 'See revenue and sales reports', admin: true, staff: false },
+  { task: 'See revenue and the dashboard sales charts', admin: true, staff: false },
+  { task: 'Open reports and download them as CSV', admin: true, staff: false },
   { task: 'See customers and their spending', admin: true, staff: false },
   { task: 'Add team members and change roles', admin: true, staff: false },
 ];

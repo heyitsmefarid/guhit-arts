@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Clock, PackageCheck, PackageX, Store, Wand2 } from 'lucide-react';
 import { LOW_STOCK_AT } from '../../data/inventory';
 import CropFrame from '../../components/brand/CropFrame';
@@ -23,7 +23,10 @@ export default function ProductDetail() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [qty, setQty] = useState(1);
-  const [note, setNote] = useState('');
+  const [params] = useSearchParams();
+  // A design tried on the landing page arrives as ?design= and fills the note.
+  const design = params.get('design') ?? '';
+  const [note, setNote] = useState(design);
   const [files, setFiles] = useState([]);
   const [noteError, setNoteError] = useState('');
 
@@ -32,7 +35,7 @@ export default function ProductDetail() {
     setData(null);
     setError('');
     setQty(1);
-    setNote('');
+    setNote(design);
     setFiles([]);
     getProduct(productId)
       .then((d) => live && setData(d))
@@ -40,7 +43,7 @@ export default function ProductDetail() {
     return () => {
       live = false;
     };
-  }, [productId]);
+  }, [productId, design]);
 
   if (error) {
     return (

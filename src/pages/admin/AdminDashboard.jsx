@@ -19,6 +19,7 @@ import StackedColumns from '../../components/admin/StackedColumns';
 import HBars from '../../components/admin/HBars';
 import ShareBar from '../../components/admin/ShareBar';
 import Sparkline from '../../components/admin/Sparkline';
+import Panel from '../../components/admin/Panel';
 import ProductImage from '../../components/shop/ProductImage';
 import { statusLabel } from '../../data/statuses';
 import { LOW_STOCK_AT } from '../../data/inventory';
@@ -68,23 +69,6 @@ function Kpi({ to, icon: Icon, label, value, peso, hint, ink, spark, sparkLabel 
         </span>
       )}
     </Link>
-  );
-}
-
-function Panel({ id, title, sub, link, className = '', children }) {
-  return (
-    <section className={`panel ${className}`} aria-labelledby={id}>
-      <div className="panel__head">
-        <div>
-          <h2 id={id} className="h3">
-            {title}
-          </h2>
-          {sub && <p className="small muted">{sub}</p>}
-        </div>
-        {link}
-      </div>
-      {children}
-    </section>
   );
 }
 

@@ -7,6 +7,7 @@ import './styles/landing.css';
 import './styles/auth.css';
 import './styles/app.css';
 import './styles/admin.css';
+import './styles/reports.css';
 import './styles/motion.css';
 
 // Set before the first render so below-the-fold entrances start paused

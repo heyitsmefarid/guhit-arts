@@ -8,9 +8,10 @@
 import { STATUS_FLOW } from './statuses';
 import { products } from './products';
 import { getDigitalService } from './digitalServices';
+import { buildHistory } from './history';
 
 // Bump this when the sample data changes so browsers with older data reseed.
-export const SEED_VERSION = 4;
+export const SEED_VERSION = 5;
 
 export const initialCounters = { order: 1047, project: 124 };
 
@@ -23,17 +24,38 @@ function daysFromNow(days) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
-// Status history up to `status`, with the steps spread between `startDaysAgo`
-// and `endDaysAgo`.
-function history(status, startDaysAgo, endDaysAgo = 0, notes = {}) {
+// A plausible time of day for a sample order or request placed `d` days and
+// `h` hours ago. Every item on the same day shares one clock time (minus its
+// hour offset), so each list stays in date order.
+function placedAt(d, h, kind) {
+  if (d === 0) return daysAgo(0, h);
+  const day = new Date(Date.now() - d * 864e5);
+  day.setHours(0, 0, 0, 0);
+  const minutes = kind === 'order' ? 9 * 60 + ((d * 173) % 600) : 10 * 60 + ((d * 211) % 640);
+  return new Date(day.getTime() + minutes * 60000 - h * 36e5).toISOString();
+}
+
+// Who moves sample work along: counter staff for orders, the Hub designer for
+// digital requests (names match the Team page).
+const ORDER_TEAM = ['Mark Dizon', 'Ben Ramos', 'Mark Dizon', 'Lorna Guhit'];
+const HUB_TEAM = ['Joy Macaraig', 'Joy Macaraig', 'Lorna Guhit'];
+
+// Status history up to `status`: approved within a few hours of `createdAt`,
+// then the remaining steps spread out until `endDaysAgo`.
+function history(status, createdAt, endDaysAgo = 0, notes = {}, team = ORDER_TEAM) {
   const steps = STATUS_FLOW.slice(0, STATUS_FLOW.indexOf(status) + 1);
-  const start = startDaysAgo * 24;
-  const end = endDaysAgo * 24;
-  return steps.map((s, i) => ({
-    status: s,
-    at: daysAgo(0, steps.length === 1 ? start : start - ((start - end) * i) / (steps.length - 1 || 1)),
-    note: notes[s] ?? '',
-  }));
+  const now = Date.now() - 60000;
+  const start = new Date(createdAt).getTime();
+  const approved = Math.min(start + (1 + ((start / 36e5) % 2)) * 36e5, now);
+  const end = Math.max(approved, Math.min(now, Date.now() - endDaysAgo * 864e5));
+  return steps.map((s, i) => {
+    let at = start;
+    if (i === 1) at = approved;
+    if (i > 1) at = approved + ((end - approved) * (i - 1)) / (steps.length - 2);
+    const step = { status: s, at: new Date(at).toISOString(), note: notes[s] ?? '' };
+    if (i > 0) step.by = team[(i + Math.floor(start / 36e5)) % team.length];
+    return step;
+  });
 }
 
 const PRODUCT = Object.fromEntries(products.map((p) => [p.id, p]));
@@ -51,11 +73,15 @@ const DELIVERY_FEE = 60;
 function order(n, customer, [d, h = 0], status, fulfillment, payment, items, notes = {}) {
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const deliveryFee = fulfillment === 'delivery' ? DELIVERY_FEE : 0;
-  const age = d + h / 24;
+  const createdAt = placedAt(d, h, 'order');
+  const age = (Date.now() - new Date(createdAt)) / 864e5;
+  // Shelf items are ready within the day; custom goods wait for proof approval.
+  const custom = items.some((i) => i.productId.startsWith('cus-'));
+  const lag = custom ? 2 + (n % 3) * 0.7 : 0.3 + (n % 4) * 0.25;
   return {
     ref: `GAC-ORD-${String(n).padStart(5, '0')}`,
     kind: 'order',
-    createdAt: daysAgo(d, h),
+    createdAt,
     items,
     subtotal,
     deliveryFee,
@@ -68,16 +94,20 @@ function order(n, customer, [d, h = 0], status, fulfillment, payment, items, not
       address: fulfillment === 'delivery' ? customer.address : '',
     },
     status,
-    history: history(status, age, status === 'completed' ? Math.max(age - 3, 0) : age * 0.25, notes),
+    history: history(status, createdAt, status === 'completed' ? Math.max(age - lag, 0) : age * 0.25, notes),
   };
 }
 
 function project(n, customer, [d, h = 0], serviceId, status, { notes = {}, deadline, ...fields }) {
-  const age = d + h / 24;
+  const createdAt = placedAt(d, h, 'project');
+  const age = (Date.now() - new Date(createdAt)) / 864e5;
+  // Finished requests end when the final file was sent.
+  const final = fields.deliverables?.find((f) => f.kind === 'final');
+  const doneDaysAgo = final ? (Date.now() - new Date(final.at)) / 864e5 : Math.max(age - 4, 0);
   return {
     ref: `GAC-DIG-${String(n).padStart(5, '0')}`,
     kind: 'project',
-    createdAt: daysAgo(d, h),
+    createdAt,
     serviceId,
     serviceName: getDigitalService(serviceId).name,
     customerName: customer.fullName,
@@ -88,7 +118,9 @@ function project(n, customer, [d, h = 0], serviceId, status, { notes = {}, deadl
     ...fields,
     deadline: daysFromNow(deadline),
     status,
-    history: history(status, age, status === 'completed' ? Math.max(age - 4, 0) : age * 0.25, notes),
+    // Finished jobs record how many drafts the customer asked to change.
+    ...(status === 'completed' && { revisions: (n * 7) % 3 }),
+    history: history(status, createdAt, status === 'completed' ? doneDaysAgo : age * 0.25, notes, HUB_TEAM),
   };
 }
 
@@ -215,7 +247,7 @@ const customer = (id, fullName, email, contactNumber, address, ago) => ({
   createdAt: daysAgo(ago),
 });
 
-export const sampleCustomers = [
+const handWrittenCustomers = [
   customer('c-maria', 'Maria Santos', 'maria.santos@example.com', '0917 812 4410', 'Brgy. Ibaba East, Calapan City', 210),
   customer('c-rafael', 'Rafael Mendoza', 'rafael.mendoza@example.com', '0928 334 1902', 'Brgy. Guinobatan, Calapan City', 400),
   customer('c-kristine', 'Kristine Dela Peña', 'kristine.delapena@example.com', '0995 221 7734', 'Brgy. Lumangbayan, Calapan City', 95),
@@ -226,7 +258,12 @@ export const sampleCustomers = [
   customer('c-nestor', 'Nestor Castillo', 'nestor.castillo@example.com', '0918 702 4459', 'Poblacion, Baco, Oriental Mindoro', 520),
 ];
 
-const C = Object.fromEntries([demoUser, studentUser, ...sampleCustomers].map((c) => [c.id, c]));
+const C = Object.fromEntries([demoUser, studentUser, ...handWrittenCustomers].map((c) => [c.id, c]));
+
+// A year of older, completed history for the Reports page (see data/history.js),
+// with the extra sample customers who placed it.
+const HISTORY = buildHistory(handWrittenCustomers);
+export const sampleCustomers = [...handWrittenCustomers, ...HISTORY.customers];
 
 // ------------------------------------------------------------------
 // Orders, in date order (oldest first)
@@ -258,7 +295,7 @@ const ORDERS = [
   ['c-paolo', order(1043, C['c-paolo'], [3], 'approved', 'pickup', 'gcash', [item('prt-bond-a4', 1), item('prt-photo-paper', 2)])],
   ['c-grace', order(1044, C['c-grace'], [2], 'in_progress', 'delivery', 'maya', [item('cus-tarpaulin', 1, 'Wedding welcome sign'), item('cus-mug', 50, 'Wedding giveaways, couple names on the back')])],
   ['c-rafael', order(1045, C['c-rafael'], [1], 'approved', 'delivery', 'cash', [item('cus-tarpaulin', 6, 'Fiesta announcements, 6 designs')])],
-  ['u-student', order(1046, C['u-student'], [0, 20], 'pending', 'pickup', 'gcash', [item('prt-bond-long', 1), item('sch-illustration-board', 3)])],
+  ['u-student', order(1046, C['u-student'], [0, 10], 'pending', 'pickup', 'gcash', [item('prt-bond-long', 1), item('sch-illustration-board', 3)])],
   ['c-liza', order(1047, C['c-liza'], [0, 6], 'pending', 'pickup', 'gcash', [item('prt-sticker-paper', 4), item('cus-pins', 10, 'Loyalty card pins')])],
 ];
 
@@ -373,7 +410,7 @@ const PROJECTS = [
     deadline: 10, budget: 800, price: null,
     files: [file('logo-ideas-sketch.jpg', 640)],
   })],
-  ['c-maria', project(123, C['c-maria'], [0, 18], 'pubmat', 'pending', {
+  ['c-maria', project(123, C['c-maria'], [0, 9], 'pubmat', 'pending', {
     title: 'Science fair poster',
     description: 'Poster announcing the school science fair, A3 print and Facebook size.',
     deadline: 5, budget: 250, price: 150,
@@ -396,7 +433,7 @@ const NOTIFICATIONS = {
     notification('n-d1', [24], 'GAC-DIG-00108 completed', 'Your resume files are ready to download.', '/app/track/GAC-DIG-00108', 'project', true),
   ],
   'u-student': [
-    notification('n-s5', [0, 20], 'Order GAC-ORD-01046 received', 'We will confirm stock and message you when it is ready for pickup.', '/app/track/GAC-ORD-01046', 'order', false),
+    notification('n-s5', [0, 10], 'Order GAC-ORD-01046 received', 'We will confirm stock and message you when it is ready for pickup.', '/app/track/GAC-ORD-01046', 'order', false),
     notification('n-s4', [2], 'GAC-DIG-00121 is now In Progress', 'A designer is working on your SIP slides.', '/app/track/GAC-DIG-00121', 'project', false),
     notification('n-s3', [6], 'GAC-DIG-00115 completed', 'Your resume is ready to download.', '/app/track/GAC-DIG-00115', 'project', true),
     notification('n-s2', [11], 'Order GAC-ORD-01033 is ready', 'Your school supplies are ready for pickup at the counter.', '/app/track/GAC-ORD-01033', 'order', true),
@@ -409,8 +446,8 @@ const NOTIFICATIONS = {
 export function buildSampleAccounts() {
   const accounts = {};
   const ensure = (id) => (accounts[id] ??= { orders: [], projects: [], notifications: NOTIFICATIONS[id] ?? [] });
-  for (const [id, o] of ORDERS) ensure(id).orders.unshift(o);
-  for (const [id, p] of PROJECTS) ensure(id).projects.unshift(p);
+  for (const [id, o] of [...HISTORY.orders, ...ORDERS]) ensure(id).orders.unshift(o);
+  for (const [id, p] of [...HISTORY.projects, ...PROJECTS]) ensure(id).projects.unshift(p);
   return accounts;
 }
 

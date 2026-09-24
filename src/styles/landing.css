@@ -291,83 +291,145 @@
   max-width: 700px;
 }
 
-/* ---------- Services: four divisions, each keyed to one ink ---------- */
-.divisions {
+/* ---------- Services: the four divisions as the four ink plates ---------- */
+.plates__hint {
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
+  color: var(--magenta-ink);
+  rotate: -3deg;
+}
+@media (hover: none) {
+  .plates__hint {
+    display: none;
+  }
+}
+.plates {
   display: grid;
-  gap: clamp(3rem, 7vw, 5rem);
-}
-.division {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: clamp(1.75rem, 5vw, 4.5rem);
-  align-items: center;
-}
-.division:nth-child(even) .division__media {
-  order: 2;
-}
-.division__media {
-  position: relative;
-  aspect-ratio: 16 / 11;
-}
-/* The ink plate sits a little off-register behind the photo. */
-.division__media::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-lg);
-  background: var(--div);
-  transform: translate(14px, 14px);
-}
-.division:nth-child(even) .division__media::before {
-  transform: translate(-14px, 14px);
-}
-.division__media img {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: var(--radius-lg);
-}
-.division__title {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: clamp(1.6rem, 1.15rem + 1.5vw, 2.35rem);
-  font-weight: 800;
-  font-stretch: 120%;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
-}
-.division__plate {
-  flex: none;
-  width: 0.62em;
-  height: 0.62em;
-  border-radius: 4px;
-  background: var(--div);
-}
-.division__summary {
-  max-width: 50ch;
-  margin-top: 0.9rem;
-  font-size: 1.06rem;
-  color: var(--graphite);
-}
-.division__list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 1.3rem 0 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 2.75rem) clamp(1.25rem, 2.4vw, 2rem);
+  margin: 0;
   padding: 0;
   list-style: none;
 }
-.division__list li {
-  padding: 0.35rem 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  font-size: 0.88rem;
-  font-weight: 560;
+.plate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.9rem;
+  border-top: 4px solid var(--div);
 }
-.division__link {
+/* A single-ink separation: the photo in grayscale, multiplied over the ink.
+   The key plate is plain grayscale on white, as it is on press. */
+.plate__media {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+  border-radius: var(--radius);
+  background: var(--div);
+}
+.plate[data-ink='ink'] .plate__media {
+  background: #fff;
+}
+.plate__media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.plate__sep {
+  filter: grayscale(1) contrast(1.25) brightness(1.08);
+  mix-blend-mode: multiply;
+}
+/* The full-color print sits on top; hovering lifts it off the plate. */
+.plate__color {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.6s var(--ease-print);
+}
+.plate:hover .plate__color,
+.plate:focus-within .plate__color {
+  clip-path: inset(0 0 100% 0);
+}
+.plate__letter {
+  position: absolute;
+  top: 0.7rem;
+  left: 0.7rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 8px;
+  background: var(--div);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.92);
+  font-size: 1.15rem;
+  font-weight: 850;
+  font-stretch: 125%;
+  color: #fff;
+}
+.plate[data-ink='yellow'] .plate__letter {
+  color: var(--ink);
+}
+.plate__name {
+  position: absolute;
+  bottom: 0.7rem;
+  left: 0.7rem;
+  z-index: 2;
+  padding: 0.05rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(28, 32, 84, 0.82);
+  font-size: 1rem;
+  color: #fff;
+  opacity: 0;
+  translate: 0 8px;
+  transition: opacity 0.3s var(--ease), translate 0.3s var(--ease);
+}
+.plate:hover .plate__name,
+.plate:focus-within .plate__name {
+  opacity: 1;
+  translate: 0 0;
+}
+.plate__title {
+  font-size: clamp(1.3rem, 1rem + 0.65vw, 1.6rem);
+  font-weight: 800;
+  font-stretch: 118%;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+}
+.plate__summary {
+  font-size: 0.98rem;
+  color: var(--graphite);
+}
+.plate__list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.15rem 0 0.5rem;
+  padding: 0;
+  font-size: 0.92rem;
+  list-style: none;
+}
+.plate__list li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+.plate__list li::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--div);
+  translate: 0 -1px;
+}
+.plate[data-ink='yellow'] .plate__list li::before {
+  box-shadow: 0 0 0 1px var(--yellow-ink);
+}
+.plate__link {
+  align-self: flex-start;
+  margin-top: auto;
   font-weight: 680;
   text-decoration: underline;
   text-decoration-color: var(--div);
@@ -375,21 +437,296 @@
   text-underline-offset: 6px;
   transition: text-decoration-thickness 0.15s var(--ease);
 }
-.division__link:hover {
+.plate__link:hover {
   text-decoration-thickness: 6px;
 }
-@media (max-width: 800px) {
-  .division {
+@media (max-width: 1100px) {
+  .plates {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .plate__media {
+    aspect-ratio: 3 / 2;
+  }
+}
+@media (max-width: 600px) {
+  .plates {
     grid-template-columns: 1fr;
   }
-  .division:nth-child(even) .division__media {
-    order: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .plate__color,
+  .plate__name {
+    transition: none;
   }
-  .division__media {
-    margin-right: 14px;
+}
+
+/* ---------- Studio: try an idea on a product ---------- */
+/* The section is a cutting mat: a faint drafting grid under the proof. */
+.studio {
+  background-color: var(--paper-2);
+  background-image: linear-gradient(rgba(28, 32, 84, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 32, 84, 0.055) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border-top: 1px solid var(--line);
+  overflow-x: clip; /* the proof's crop marks reach past the edge on phones */
+}
+.studio__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'copy stage'
+    'form stage';
+  gap: 1.5rem clamp(2rem, 5vw, 4.5rem);
+  align-items: start;
+}
+.studio__copy {
+  grid-area: copy;
+  display: grid;
+  gap: 1rem;
+}
+.studio__stage {
+  grid-area: stage;
+  align-self: center;
+  display: grid;
+  gap: 0.9rem;
+}
+.studio__form {
+  grid-area: form;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.studio__choices,
+.studio__actions {
+  grid-column: 1 / -1;
+}
+.studio__choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.studio__choices legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+.studio__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.studio__option {
+  position: relative;
+}
+.studio__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.studio__option > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.95rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 0.92rem;
+  font-weight: 620;
+  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+.studio__option:hover > span {
+  border-color: var(--ink-soft);
+}
+.studio__option input:checked + span {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+.studio__option input:focus-visible + span {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+.studio__swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--div);
+  box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(28, 32, 84, 0.2);
+}
+.studio__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.studio__proof {
+  position: relative;
+  margin: 0;
+  padding: clamp(0.75rem, 2.5vw, 1.75rem);
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.studio__proof svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.studio__caption {
+  position: absolute;
+  top: 0.75rem;
+  right: 1.1rem;
+  font-size: 1.05rem;
+  color: var(--magenta-ink);
+  rotate: 3deg;
+}
+.studio__status {
+  font-size: 0.9rem;
+  color: var(--graphite);
+}
+.studio__ticket {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  padding: 1rem 1.2rem;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.3s var(--ease);
+}
+.studio__ticket.is-ready {
+  border-style: solid;
+  border-color: var(--ink);
+}
+.studio__ticket-name {
+  font-weight: 750;
+}
+.studio__ticket-meta {
+  font-size: 0.9rem;
+  color: var(--graphite);
+}
+
+/* Product drawings */
+.mock__body {
+  fill: #fff;
+}
+.mock__line {
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+.mock__handle-out {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 30;
+}
+.mock__handle-in {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 26;
+}
+.mock__rim {
+  fill: var(--paper);
+}
+.mock__seam {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+.mock__edge {
+  fill: var(--paper-2);
+}
+.mock__gloss {
+  fill: none;
+  stroke: var(--paper-2);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.mock__rope {
+  fill: none;
+  stroke: var(--graphite-2);
+  stroke-width: 2;
+}
+.mock__eyelet {
+  fill: var(--paper);
+  stroke: var(--graphite-2);
+  stroke-width: 2.5;
+}
+
+/* The design: pencil while it is an idea, ink once printed */
+.art__main {
+  font-family: var(--font);
+  font-weight: 850;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+  fill: var(--div);
+}
+.art__sub {
+  font-family: var(--font);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  fill: var(--div);
+}
+.studio__proof[data-ink='yellow'] .art:not(.art--sketch) text {
+  paint-order: stroke;
+  stroke: var(--yellow-ink);
+  stroke-width: 0.7px;
+}
+.art--sketch {
+  transform-box: fill-box;
+  transform-origin: center;
+  rotate: -2deg;
+}
+.art--sketch text {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  font-stretch: 100%;
+  fill: var(--graphite);
+}
+.art__area {
+  fill: none;
+  stroke: var(--graphite-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 6;
+}
+.plate-run {
+  mix-blend-mode: multiply;
+}
+.plate-run--c text {
+  fill: var(--cyan);
+}
+.plate-run--m text {
+  fill: var(--magenta);
+}
+.plate-run--y text {
+  fill: var(--yellow);
+}
+.studio__sweep {
+  fill: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 960px) {
+  .studio__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'copy'
+      'stage'
+      'form';
   }
-  .division:nth-child(even) .division__media {
-    margin: 0 0 0 14px;
+}
+@media (max-width: 480px) {
+  .studio__form {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -534,6 +871,10 @@
 .about__story > p:not(.lede) {
   max-width: 60ch;
   color: var(--ink-soft);
+}
+/* The tilted photo and its crop marks stay inside the page on phones. */
+.about {
+  overflow-x: clip;
 }
 .about__photo {
   margin: 1.2rem 18px 0;

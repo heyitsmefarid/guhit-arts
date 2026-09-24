@@ -38,6 +38,7 @@ const AdminProducts = lazy(() => import('./pages/admin/AdminProducts'));
 const AdminCustomers = lazy(() => import('./pages/admin/AdminCustomers'));
 const AdminCustomerDetail = lazy(() => import('./pages/admin/AdminCustomerDetail'));
 const AdminTeam = lazy(() => import('./pages/admin/AdminTeam'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
 
 const Loading = () => <div className="route-loading" aria-busy="true" aria-label="Loading" />;
 
@@ -84,6 +85,14 @@ export default function App() {
                       element={
                         <RequirePermission permission="view-customers">
                           <AdminCustomerDetail />
+                        </RequirePermission>
+                      }
+                    />
+                    <Route
+                      path="reports"
+                      element={
+                        <RequirePermission permission="view-reports">
+                          <AdminReports />
                         </RequirePermission>
                       }
                     />

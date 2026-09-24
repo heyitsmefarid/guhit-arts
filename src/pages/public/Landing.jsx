@@ -5,6 +5,7 @@ import RegMark from '../../components/brand/RegMark';
 import Ticker from '../../components/fx/Ticker';
 import Hero from '../../components/landing/Hero';
 import Services from '../../components/landing/Services';
+import Studio from '../../components/landing/Studio';
 import FeaturedProducts from '../../components/landing/FeaturedProducts';
 import DigitalHubTeaser from '../../components/landing/DigitalHubTeaser';
 import About from '../../components/landing/About';
@@ -22,6 +23,7 @@ export default function Landing() {
         <Hero />
         <Ticker />
         <Services />
+        <Studio />
         <FeaturedProducts />
         <DigitalHubTeaser />
         <About />

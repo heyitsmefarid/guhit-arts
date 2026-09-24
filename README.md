@@ -2,11 +2,11 @@
 
 Front-end prototype for **Guhit Arts Center** (Leuterio, San Vicente South, Calapan City, Oriental Mindoro), prepared for an academic business proposal. It has three parts:
 
-1. **Public landing page**: services, featured products, the proposed Student Digital Help Hub, the shop's history, and contact details.
+1. **Public landing page**: services, a design studio where visitors try their own text on a mug, shirt, button pin, or tarpaulin, featured products, the proposed Student Digital Help Hub, the shop's history, and contact details.
 2. **Customer platform** (after login): dashboard, shop with cart and checkout, digital service requests, order and project tracking, notifications, and profile.
-3. **Admin panel** (staff login at `/admin`): dashboard with sales charts, order and digital-request management, products and stock, customers, and team. Two roles: **administrator** (the owner, full access) and **staff** (orders, requests, and stock).
+3. **Admin panel** (staff login at `/admin`): dashboard with sales charts, order and digital-request management, products and stock, customers, reports, and team. Two roles: **administrator** (the owner, full access) and **staff** (orders, requests, and stock).
 
-There is no backend. Accounts, orders, projects, notifications, and stock are stored in the browser's `localStorage`, and every "server" call is simulated. The app ships with a month of sample shop activity: eight sample customers plus the two customer logins, 28 orders, and 17 digital requests.
+There is no backend. Accounts, orders, projects, notifications, and stock are stored in the browser's `localStorage`, and every "server" call is simulated. The app ships with about a year of sample shop activity: 50 sample customers plus the two customer logins, about 300 orders, and 124 digital requests. The last 30 days are written by hand in `src/data/seed.js`. The older, completed history is generated from a fixed seed in `src/data/history.js`, following the school and fiesta calendar (school supplies peak in June, custom goods in December and around graduation).
 
 ## Run it
 
@@ -34,7 +34,7 @@ The customer login page (`/login`) lists the two customer accounts and the staff
 
 ## Suggested presentation walkthrough
 
-1. **Landing page**: hero, the four divisions, featured products, the Digital Help Hub price list, "47 Years of Creativity and Service", and contact.
+1. **Landing page**: hero, the four divisions (hover a photo to see its ink plate), then **Try a design**: type a name, pick a product and an ink, and press **Print it**. **Order this design** carries the text into the product's order note after login. Then featured products, the Digital Help Hub price list, "47 Years of Creativity and Service", and contact.
 2. **Sign up** with a new account, or log in with one of the customer accounts. You land on the dashboard.
 3. **Shop → product → cart → checkout**: add a regular item, then a customized item (for example the Custom Mug) with a design note. Choose delivery and GCash, and place the order.
 4. **Track the order**: open it from My Orders. The shop moves it along from the admin panel (step 7), or use **Prototype control → Move to …** on the tracking page for a quick demo.
@@ -42,6 +42,7 @@ The customer login page (`/login`) lists the two customer accounts and the staff
 6. **My Projects / Notifications / Profile**: show the new project, mark notifications as read, and upload a profile picture.
 7. **Admin panel**: open a second tab at `/admin/login` and log in as staff. Approve the order you just placed, quote and approve the digital request, then send a draft file. The customer tab updates on its own: new status, notification, and the draft to download.
 8. **Products & Stock**: change a price or hide a product, then refresh the customer shop to show the change.
+9. **Reports** (as the administrator): switch between **This month** and **Last 12 months** to show the seasonal peaks, open each tab, and use **Download CSV** or **Print or save as PDF**.
 
 To start fresh before a presentation, go to **Profile → Reset demo data** (in the customer platform). This clears everything saved in the browser and restores the sample data.
 
@@ -56,7 +57,8 @@ Staff log in at `/admin/login`. There are two roles:
 | Adjust stock counts | Yes | Yes |
 | Set product prices and digital quotations | Yes | No |
 | Add products, or hide them from the shop | Yes | No |
-| See revenue and sales reports | Yes | No |
+| See revenue and the dashboard sales charts | Yes | No |
+| Open Reports and download them as CSV | Yes | No |
 | See customers and their spending | Yes | No |
 | Add team members, change roles, deactivate accounts | Yes | No |
 
@@ -67,6 +69,14 @@ The panel has:
 - **Digital Requests**: set a price (quotation-based requests need one before approval), move the request along, and send draft or final files. Customers see the files on their tracking page.
 - **Products & Stock**: edit prices and stock, hide products from the shop, and add new products. Placing an order takes items off the shelf.
 - **Customers** (administrator only): spending and activity per customer, with their orders and requests.
+- **Reports** (administrator only): pick **This month**, **Last month**, **Last 3 months**, or **Last 12 months**. Every figure is compared with the period before. Each tab opens with "What stands out", the main findings written as sentences, followed by figures, charts, and tables:
+  - **Sales**: revenue split into shop and digital, revenue by category with change, best-selling products, payment methods, and pickup or delivery.
+  - **Products & stock**: units by category, stock coverage (how many days each shelf item lasts at the current pace, with a suggested reorder), made-to-order sales, and slow movers.
+  - **Digital Help Hub**: requests over time, open requests by stage, results by service (price, turnaround, on-time rate), rounds of changes, quotes within budget, and rush jobs.
+  - **Customers**: first-time and returning buyers over time, where customers come from (barangay or town), and the top customers.
+  - **Operations**: time to approve orders and confirm requests, how long orders take, a heatmap of busy days and hours, open work by age, and each team member's workload.
+
+  **Download CSV** saves the rows behind the current tab for Excel. **Print or save as PDF** prints a clean landscape copy with the shop name, the period, and who prepared it.
 - **Team** (administrator only): everyone who can use the panel, their role and last sign-in. Add team members with a temporary password, switch roles, or deactivate an account so it can no longer log in. The shop always keeps at least one active administrator.
 
 Every status change creates a notification for that customer and is recorded with the name of the staff member who made it. Each browser tab keeps its own login, so the admin panel and a customer account can run side by side in one browser; changes in one tab appear in the other without a reload.
@@ -76,7 +86,9 @@ Every status change creates a notification for that customer and is recorded wit
 The animations follow one idea: things arrive the way a print does, with the cyan, magenta, and yellow plates sliding into alignment.
 
 - **Hero**: the headline prints into register, the pencil line draws, and the photos drop onto the table and drift with the mouse. Move the cursor over the hero to **doodle** with a fading pencil line (mouse and pen only).
-- **Scrolling**: service photos print over their ink plate, product cards are dealt in, the price list fills row by row, "47 Years" counts up, and the history line draws itself. A CMYK bar at the top shows scroll progress (in Chromium browsers).
+- **Services**: each division is one of the four process inks. Its photo first appears as a single-ink separation (cyan, magenta, yellow, key), then the full-color print feeds down over it. Hovering a photo lifts the print to show its plate again.
+- **Try a design**: the text starts as a pencil sketch. **Print it** runs it through the press: the cyan, magenta, and yellow plates flash past into register, then the chosen ink lands on the product.
+- **Scrolling**: product cards are dealt in, the price list fills row by row, "47 Years" counts up, and the history line draws itself. A CMYK bar at the top shows scroll progress (in Chromium browsers).
 - **Customer platform**: pages ease in, dashboard numbers count up, progress rails fill with a moving "printing" stripe on the current step, items fly into the cart, and order or request confirmations end in CMYK confetti.
 
 Everything is in `src/styles/motion.css` and `src/components/fx/`. Visitors with **Reduce motion** turned on in their system settings get the same pages without animation.
@@ -92,23 +104,26 @@ src/
 │   ├── photos/             section photos
 │   └── CREDITS.json        source and license of every photo
 ├── components/
+│   ├── admin/              charts (columns, bars, share bar, sparkline, heatmap) and report pieces
 │   ├── brand/              logo, registration mark, color bar, hero stroke, crop marks
-│   ├── landing/            landing page sections
+│   ├── landing/            landing page sections, including the design studio
 │   ├── layout/             public header/footer, customer app layout, route guards
 │   ├── shop/               product card and product image
 │   ├── digital/            service icons and CSS-drawn sample outputs
 │   └── ui/                 status badge, status timeline, stepper, file drop, etc.
 ├── context/                auth, account data, cart, and toast state
-├── data/                   mock data: products, digital services, business info, seed data, statuses
+├── data/                   mock data: products, digital services, business info, seed data,
+│                           generated history (history.js), statuses
 ├── pages/
 │   ├── public/             landing page
 │   ├── auth/               login, sign up, forgot password
 │   ├── app/                dashboard, shop, cart, checkout, services, request form,
 │   │                       orders, projects, tracking, notifications, profile
-│   └── admin/              admin dashboard, orders, digital requests, products, customers
+│   └── admin/              admin dashboard, orders, digital requests, products, customers,
+│                           team, and reports (one file per report tab in reports/)
 ├── services/               mock API layer (see below), including adminService and inventoryStore
-├── styles/                 base tokens, brand pieces, landing, auth, and app styles
-└── utils/                  formatting, shop hours, image lookup
+├── styles/                 base tokens, brand pieces, landing, auth, app, admin, reports, motion
+└── utils/                  formatting, shop hours, image lookup, admin and report calculations
 ```
 
 ## Connecting a real backend later
@@ -128,6 +143,7 @@ All data access goes through `src/services/`. The pages and contexts never touch
 | `adminService.getAdminData` | `GET /api/admin/orders`, `/projects`, `/customers`, `/products` |
 | `adminService.updateOrderStatus / updateProject` | `PATCH /api/admin/orders/:ref`, `/projects/:ref` |
 | `adminService.updateProduct / addProduct` | `PATCH /api/admin/products/:id`, `POST /api/admin/products` |
+| `utils/reports.js` (computed in the browser) | `GET /api/admin/reports/:tab?from=&to=` returning the same shapes |
 | `accountService.markNotificationsRead` | `PATCH /api/notifications` |
 
 The status pipeline and its labels live in `src/data/statuses.js`.
