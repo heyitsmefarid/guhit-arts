@@ -1,0 +1,1000 @@
+/* ------------------------------------------------------------------
+   Motion system
+   One idea runs through it: things arrive the way a print does.
+   - "register": cyan, magenta, and yellow plates slide into alignment
+   - "print-feed": images print top to bottom
+   - "draw": lines are drawn like pencil strokes
+   Everything animated lives inside prefers-reduced-motion: no-preference.
+   Blocks marked [data-reveal] hold their animations until scrolled into view.
+   ------------------------------------------------------------------ */
+:root {
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-print: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ---------- Static pieces used by the effects ---------- */
+.hero {
+  position: relative;
+}
+.hero__inner {
+  position: relative;
+  z-index: 1;
+}
+.trail {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero__doodle {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero__doodle {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: var(--gutter);
+    font-size: 1.05rem;
+    color: var(--magenta-ink);
+    rotate: 4deg;
+  }
+}
+
+.hero__proofs .proof {
+  transform: translate3d(
+    calc(var(--mx, 0) * var(--depth, 10) * -1px),
+    calc(var(--my, 0) * var(--depth, 10) * -1px),
+    0
+  );
+  transition: transform 0.6s var(--ease), rotate 0.45s var(--ease), scale 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+.hero__proofs .proof:hover {
+  z-index: 6;
+  rotate: 0deg;
+  scale: 1.05;
+  box-shadow: 0 40px 80px -24px rgba(28, 32, 84, 0.45);
+}
+
+/* Crossed tape bands */
+.ticker {
+  position: relative;
+  height: clamp(120px, 14vw, 170px);
+  overflow: hidden;
+}
+.ticker__band {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 50%;
+  overflow: hidden;
+  padding: 0.85rem 0;
+  box-shadow: 0 12px 26px -16px rgba(28, 32, 84, 0.45);
+}
+.ticker__band--ink {
+  z-index: 2;
+  background: var(--ink);
+  color: #fff;
+  transform: translateY(-50%) rotate(-2.2deg);
+}
+.ticker__band--yellow {
+  z-index: 1;
+  background: var(--yellow);
+  color: var(--ink);
+  transform: translateY(-50%) rotate(1.8deg);
+}
+.ticker__track {
+  display: flex;
+  width: max-content;
+}
+.ticker__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding-right: 1.4rem;
+  font-size: clamp(1.05rem, 0.9rem + 0.6vw, 1.45rem);
+  font-weight: 800;
+  font-stretch: 125%;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.ticker__mark--cyan {
+  color: var(--cyan);
+}
+.ticker__mark--magenta {
+  color: var(--magenta);
+}
+.ticker__mark--yellow {
+  color: var(--yellow);
+}
+.ticker__band--yellow .ticker__mark--yellow {
+  color: var(--ink);
+}
+
+.scroll-progress {
+  display: none;
+}
+
+.closing {
+  position: relative;
+  overflow: hidden;
+}
+.closing__mark {
+  position: absolute;
+  right: -110px;
+  top: 50%;
+  translate: 0 -50%;
+  color: #fff;
+  opacity: 0.12;
+  pointer-events: none;
+}
+.closing__inner {
+  position: relative;
+}
+
+/* Status rail and timeline: fills live on pseudo-elements so they can be drawn in. */
+.rail__step.is-done .rail__seg,
+.rail__step.is-current .rail__seg {
+  background: var(--line);
+}
+.rail__seg {
+  position: relative;
+  overflow: hidden;
+}
+.rail__seg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-origin: left center;
+}
+.rail__step.is-done .rail__seg::after {
+  background: var(--ink);
+}
+.rail__step.is-current .rail__seg::after {
+  background: repeating-linear-gradient(-45deg, var(--magenta) 0 6px, #ff4fa9 6px 12px);
+  background-size: 17px 17px;
+}
+.timeline__step.is-done::before {
+  background: linear-gradient(var(--ink), var(--ink)) top / 100% 100% no-repeat, var(--line);
+}
+.timeline__dot {
+  position: relative;
+}
+
+/* Confetti (the component only renders when motion is allowed) */
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  overflow: hidden;
+  pointer-events: none;
+}
+.confetti__p {
+  position: absolute;
+  top: -24px;
+  left: var(--x);
+  width: var(--s);
+  height: calc(var(--s) * 0.62);
+  border-radius: 2px;
+  background: var(--c);
+  opacity: 0;
+  animation: confetti-fall var(--dur) var(--delay) cubic-bezier(0.25, 0.6, 0.45, 1) forwards;
+}
+.confetti__p--1 {
+  height: var(--s);
+  border-radius: 50%;
+}
+.confetti__p--2 {
+  height: var(--s);
+  border: 2px solid var(--c);
+  border-radius: 50%;
+  background: none;
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 105vh, 0) rotate(var(--rot));
+  }
+}
+
+/* ---------- Hover details (motion-light, fine for everyone) ---------- */
+.logo__mark svg {
+  transition: transform 0.6s var(--ease-back);
+}
+.logo:hover .logo__mark svg {
+  transform: rotate(90deg);
+}
+.site-nav__link {
+  position: relative;
+}
+.site-nav__link::after {
+  content: '';
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: 0.3rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--magenta);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.3s var(--ease);
+}
+.site-nav__link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Buttons pick up a misregistered shadow on hover. */
+.btn--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: -3px 3px 0 var(--cyan), 3px 5px 0 var(--yellow);
+}
+.btn--ink:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: -3px 3px 0 var(--magenta), 3px 5px 0 var(--cyan);
+}
+.btn--light:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: -3px 3px 0 var(--cyan), 3px 5px 0 var(--magenta);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.pcard {
+  transition: border-color 0.2s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.pcard:hover {
+  transform: translateY(-4px);
+  box-shadow: -5px 6px 0 rgba(0, 159, 227, 0.45), 5px 9px 0 rgba(228, 0, 124, 0.38),
+    0 20px 30px -18px rgba(28, 32, 84, 0.35);
+}
+.svc {
+  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+}
+.svc:hover {
+  transform: translateY(-4px);
+  box-shadow: -4px 5px 0 rgba(228, 0, 124, 0.3), 4px 8px 0 rgba(0, 159, 227, 0.3);
+}
+.stat,
+.latest,
+.starter__item,
+.track-item {
+  transition: border-color 0.2s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.stat:hover,
+.latest:hover,
+.track-item:hover {
+  transform: translateY(-3px);
+}
+.stat__icon,
+.svc__icon,
+.side-link svg {
+  transition: transform 0.35s var(--ease-back);
+}
+.stat:hover .stat__icon,
+.svc:hover .svc__icon {
+  transform: rotate(-12deg) scale(1.14);
+}
+.side-link:hover svg {
+  transform: scale(1.15) rotate(-6deg);
+}
+.priceboard__name,
+.priceboard__price,
+.priceboard__leader {
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.priceboard__row:hover .priceboard__price {
+  color: #fff;
+}
+.priceboard__row:hover .priceboard__leader {
+  border-bottom-color: var(--yellow);
+}
+.sample .pv {
+  transition: translate 0.35s var(--ease), rotate 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+.sample:hover .pv {
+  translate: 0 -8px;
+  rotate: -2.5deg;
+  box-shadow: 0 30px 40px -22px rgba(0, 0, 0, 0.6);
+}
+.sample:nth-child(even):hover .pv {
+  rotate: 2.5deg;
+}
+
+/* ------------------------------------------------------------------
+   Animations
+   ------------------------------------------------------------------ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 22px;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.55;
+  }
+}
+@keyframes register {
+  0% {
+    color: transparent;
+    text-shadow: -0.1em 0.06em 0 var(--cyan), 0.09em -0.05em 0 var(--magenta), 0.04em 0.1em 0 var(--yellow);
+  }
+  55% {
+    color: transparent;
+    text-shadow: -0.02em 0.012em 0 var(--cyan), 0.018em -0.01em 0 var(--magenta), 0.008em 0.02em 0 var(--yellow);
+  }
+  100% {
+    text-shadow: 0 0 0 transparent, 0 0 0 transparent, 0 0 0 transparent;
+  }
+}
+@keyframes print-feed {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+@keyframes write-on {
+  from {
+    clip-path: inset(-10% 100% -10% 0);
+  }
+}
+@keyframes draw-x {
+  from {
+    scale: 0 1;
+  }
+}
+@keyframes draw-down {
+  from {
+    scale: 1 0;
+  }
+}
+@keyframes proof-drop {
+  from {
+    opacity: 0;
+    translate: 0 -70px;
+    rotate: -16deg;
+    scale: 1.1;
+  }
+}
+@keyframes card-deal {
+  from {
+    opacity: 0;
+    translate: 0 30px;
+    rotate: -3deg;
+  }
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes stripes {
+  to {
+    background-position: 17px 0;
+  }
+}
+@keyframes ring-ping {
+  0% {
+    opacity: 0.8;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 2;
+  }
+}
+@keyframes shadow-ping {
+  from {
+    box-shadow: 0 0 0 0 rgba(228, 0, 124, 0.55);
+  }
+  to {
+    box-shadow: 0 0 0 14px rgba(228, 0, 124, 0);
+  }
+}
+@keyframes dots-drift {
+  to {
+    background-position: 140px 140px;
+  }
+}
+@keyframes bell {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  15% {
+    rotate: 16deg;
+  }
+  30% {
+    rotate: -14deg;
+  }
+  45% {
+    rotate: 10deg;
+  }
+  60% {
+    rotate: -6deg;
+  }
+  75% {
+    rotate: 3deg;
+  }
+}
+@keyframes sticker-slap {
+  from {
+    opacity: 0;
+    scale: 1.8;
+    rotate: 14deg;
+  }
+}
+@keyframes fan-in {
+  from {
+    opacity: 0;
+    translate: calc((2.5 - var(--i, 0)) * 80%) 40px;
+    rotate: calc((var(--i, 0) - 2.5) * 7deg);
+  }
+}
+@keyframes pin-drop {
+  from {
+    opacity: 0;
+    translate: 0 -70px;
+  }
+}
+@keyframes pin-ping {
+  0% {
+    opacity: 0.9;
+    scale: 0.4;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.6;
+  }
+}
+@keyframes scan {
+  to {
+    top: 70%;
+  }
+}
+@keyframes grow-y {
+  from {
+    scale: 1 0;
+  }
+}
+@keyframes grow-w {
+  from {
+    width: 0;
+  }
+}
+@keyframes sun-rise {
+  from {
+    translate: 0 60cqi;
+  }
+}
+@keyframes progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Hold every animation inside a [data-reveal] block until it scrolls into view. */
+  .reveal-ready [data-reveal]:not(.is-in),
+  .reveal-ready [data-reveal]:not(.is-in) *,
+  .reveal-ready [data-reveal]:not(.is-in)::before,
+  .reveal-ready [data-reveal]:not(.is-in)::after,
+  .reveal-ready [data-reveal]:not(.is-in) *::before,
+  .reveal-ready [data-reveal]:not(.is-in) *::after {
+    animation-play-state: paused !important;
+  }
+
+  /* ---------- Hero: one orchestrated print run ---------- */
+  .hero__where {
+    animation: rise-in 0.6s var(--ease) backwards;
+  }
+  .hero__title-line {
+    animation: register 1.15s var(--ease) 0.1s backwards;
+  }
+  .hero__title-line + .hero__title-line {
+    animation-delay: 0.38s;
+  }
+  .hero__stroke .guhit__pencil {
+    animation-delay: 1s;
+  }
+  .hero__stroke .guhit__plate--c {
+    animation-delay: 2.15s;
+  }
+  .hero__stroke .guhit__plate--m {
+    animation-delay: 2.3s;
+  }
+  .hero__stroke .guhit__plate--y {
+    animation-delay: 2.45s;
+  }
+  .hero__sub {
+    animation: rise-in 0.7s var(--ease) 0.85s backwards;
+  }
+  .hero__inks li {
+    animation: pop-in 0.5s var(--ease-back) backwards;
+    animation-delay: calc(1s + var(--i, 0) * 90ms);
+  }
+  .hero__actions .btn {
+    animation: rise-in 0.6s var(--ease) 1.25s backwards;
+  }
+  .hero__actions .btn + .btn {
+    animation-delay: 1.37s;
+  }
+  .hero__open {
+    animation: rise-in 0.6s var(--ease) 1.55s backwards;
+  }
+  .proof {
+    animation: proof-drop 0.95s var(--ease-back) backwards;
+  }
+  .proof--b {
+    animation-delay: 0.5s;
+  }
+  .proof--a {
+    animation-delay: 0.7s;
+  }
+  .proof--c {
+    animation-delay: 0.9s;
+  }
+  .hero__note {
+    animation: write-on 1.1s var(--ease) 2.3s backwards;
+  }
+  .hero__doodle {
+    animation: fade-in 0.8s var(--ease) 3s backwards;
+  }
+
+  /* ---------- Ticker ---------- */
+  .ticker__track {
+    animation: marquee 40s linear infinite;
+  }
+  .ticker__track--reverse {
+    animation-direction: reverse;
+    animation-duration: 48s;
+  }
+  .ticker:hover .ticker__track {
+    animation-play-state: paused;
+  }
+  .ticker__mark {
+    animation: spin 7s linear infinite;
+  }
+
+  /* ---------- Scroll progress (browsers with scroll-driven animations) ---------- */
+  @supports (animation-timeline: scroll()) {
+    .scroll-progress {
+      display: block;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 70;
+      height: 4px;
+      transform-origin: 0 50%;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta) 50%, var(--yellow));
+      animation: progress-grow linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+
+  /* ---------- Section headings ---------- */
+  .section-head .h2,
+  .hub__intro .h2,
+  .about__story .h2,
+  .closing .h2 {
+    animation: register 1.1s var(--ease) 0.05s backwards;
+  }
+  .section-head .lede,
+  .section-head--row > .btn {
+    animation: rise-in 0.8s var(--ease) 0.3s backwards;
+  }
+
+  /* ---------- Services: plate first, then the photo prints over it ---------- */
+  .division__media img {
+    animation: print-feed 1.2s var(--ease-print) 0.15s backwards;
+  }
+  .division__media::before {
+    animation: fade-in 0.3s linear backwards, plate-shift 0.7s var(--ease-back) 1.2s backwards;
+  }
+  .division__title {
+    animation: register 1s var(--ease) 0.3s backwards;
+  }
+  .division__summary {
+    animation: rise-in 0.7s var(--ease) 0.5s backwards;
+  }
+  .division__list li {
+    animation: pop-in 0.45s var(--ease-back) backwards;
+    animation-delay: calc(0.65s + var(--i, 0) * 70ms);
+  }
+  .division__link {
+    animation: rise-in 0.6s var(--ease) 1.05s backwards;
+  }
+
+  /* ---------- Product cards are dealt onto the table ---------- */
+  .product-grid > .pcard {
+    animation: card-deal 0.6s var(--ease) backwards;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+
+  /* ---------- Digital Help Hub ---------- */
+  .hub .sticker,
+  .hubpage__hero .sticker {
+    animation: sticker-slap 0.6s var(--ease-back) 0.1s backwards;
+  }
+  .hub__intro .h2 {
+    animation-delay: 0.25s;
+  }
+  .hub__lede {
+    animation: rise-in 0.7s var(--ease) 0.45s backwards;
+  }
+  .hub__note {
+    animation: rise-in 0.7s var(--ease) 0.6s backwards;
+  }
+  .hub__intro .btn {
+    animation: rise-in 0.7s var(--ease) 0.75s backwards;
+  }
+  .hub::before {
+    animation: dots-drift 24s linear infinite;
+  }
+  .priceboard__head {
+    animation: fade-in 0.5s var(--ease) backwards;
+  }
+  .priceboard__row {
+    animation: rise-in 0.5s var(--ease) backwards;
+    animation-name: row-in;
+    animation-delay: calc(0.15s + var(--i, 0) * 70ms);
+  }
+  .priceboard__leader {
+    transform-origin: left center;
+    animation: draw-x 0.6s var(--ease) backwards;
+    animation-delay: calc(0.3s + var(--i, 0) * 70ms);
+  }
+  .priceboard__price {
+    animation: pop-in 0.4s var(--ease-back) backwards;
+    animation-delay: calc(0.55s + var(--i, 0) * 70ms);
+  }
+  .samples > .sample {
+    animation: fan-in 0.9s var(--ease) backwards;
+    animation-delay: calc(0.1s + var(--i, 0) * 90ms);
+  }
+  .samples--light > .sample {
+    animation-name: rise-in;
+  }
+  .pv-pubmat__sun {
+    animation: sun-rise 1.2s var(--ease) 0.6s backwards;
+  }
+  .pv-pubmat__title {
+    animation: register 1s var(--ease) 0.9s backwards;
+  }
+  .pv-slides__bars span {
+    transform-origin: bottom center;
+    animation: grow-y 0.7s var(--ease-back) 0.8s backwards;
+  }
+  .pv-slides__bars span:nth-child(2) {
+    animation-delay: 0.9s;
+  }
+  .pv-slides__bars span:nth-child(3) {
+    animation-delay: 1s;
+  }
+  .pv-slides__bars span:nth-child(4) {
+    animation-delay: 1.1s;
+  }
+  .pv-info__big {
+    animation: pop-in 0.6s var(--ease-back) 0.8s backwards;
+  }
+  .pv-info__rows span::after {
+    animation: grow-w 0.9s var(--ease) 0.9s backwards;
+  }
+  .pv-info__rows span:nth-child(2)::after {
+    animation-delay: 1.05s;
+  }
+  .pv-info__rows span:nth-child(3)::after {
+    animation-delay: 1.2s;
+  }
+  .pv-invite__title {
+    animation: write-on 1.2s var(--ease) 1s backwards;
+  }
+  .pv-qr::after {
+    content: '';
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 30%;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--magenta);
+    box-shadow: 0 0 10px 2px rgba(228, 0, 124, 0.5);
+    animation: scan 2.2s ease-in-out infinite alternate;
+  }
+
+  /* ---------- About ---------- */
+  .about__story .lede {
+    animation: rise-in 0.7s var(--ease) 0.3s backwards;
+  }
+  .about__story > p:not(.lede) {
+    animation: rise-in 0.7s var(--ease) 0.45s backwards;
+  }
+  .about__photo {
+    animation: proof-drop 0.9s var(--ease-back) 0.5s backwards;
+  }
+  .about__photo img {
+    animation: print-feed 1.2s var(--ease-print) 0.9s backwards;
+  }
+  .milestones::before {
+    transform-origin: top center;
+    animation: draw-down 1.8s var(--ease) 0.2s backwards;
+  }
+  .milestone {
+    animation: rise-in 0.6s var(--ease) backwards;
+    animation-delay: calc(0.35s + var(--i, 0) * 260ms);
+  }
+  .milestone::before {
+    animation: pop-in 0.45s var(--ease-back) backwards;
+    animation-delay: calc(0.35s + var(--i, 0) * 260ms);
+  }
+  .milestone--next::before {
+    animation: pop-in 0.45s var(--ease-back) backwards, shadow-ping 1.8s ease-out 2.4s infinite;
+    animation-delay: calc(0.35s + var(--i, 0) * 260ms), 2.4s;
+  }
+
+  /* ---------- Contact ---------- */
+  .contact__grid > * {
+    animation: rise-in 0.7s var(--ease) backwards;
+  }
+  .contact__grid > :nth-child(2) {
+    animation-delay: 0.12s;
+  }
+  .contact__grid > :nth-child(3) {
+    animation-delay: 0.24s;
+  }
+  .map__pin {
+    animation: pin-drop 0.8s var(--ease-back) 0.7s backwards;
+  }
+  .map__pin::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    width: 34px;
+    height: 12px;
+    margin-left: -17px;
+    border-radius: 50%;
+    background: rgba(228, 0, 124, 0.35);
+    animation: pin-ping 2s ease-out 1.5s infinite backwards;
+  }
+  .map__label {
+    animation: rise-in 0.6s var(--ease) 1s backwards;
+  }
+
+  /* ---------- Closing ---------- */
+  .closing__mark {
+    animation: spin 40s linear infinite;
+  }
+  .closing__actions {
+    animation: rise-in 0.7s var(--ease) 0.35s backwards;
+  }
+
+  /* ---------- Auth pages ---------- */
+  .auth__main > * {
+    animation: rise-in 0.6s var(--ease) backwards;
+  }
+  .auth__main > :nth-child(2) {
+    animation-delay: 0.07s;
+  }
+  .auth__main > :nth-child(3) {
+    animation-delay: 0.14s;
+  }
+  .auth__main > :nth-child(4) {
+    animation-delay: 0.21s;
+  }
+  .auth__main > :nth-child(5) {
+    animation-delay: 0.28s;
+  }
+  .auth__art-title {
+    animation: register 1.15s var(--ease) 0.2s backwards;
+  }
+  .auth__stroke .guhit__pencil {
+    animation-delay: 0.9s;
+  }
+  .auth__stroke .guhit__plate--c {
+    animation-delay: 2.2s;
+  }
+  .auth__stroke .guhit__plate--m {
+    animation-delay: 2.35s;
+  }
+  .auth__stroke .guhit__plate--y {
+    animation-delay: 2.5s;
+  }
+  .auth__perks li {
+    animation: rise-in 0.6s var(--ease) 1.3s backwards;
+  }
+  .auth__perks li:nth-child(2) {
+    animation-delay: 1.42s;
+  }
+  .auth__perks li:nth-child(3) {
+    animation-delay: 1.54s;
+  }
+  .auth__since {
+    animation: write-on 1s var(--ease) 1.9s backwards;
+  }
+  .auth__art::before {
+    animation: dots-drift 22s linear infinite;
+  }
+
+  /* ---------- Customer platform ---------- */
+  .app__content > .page > * {
+    animation: rise-in 0.55s var(--ease) backwards;
+  }
+  .app__content > .page > :nth-child(2) {
+    animation-delay: 0.06s;
+  }
+  .app__content > .page > :nth-child(3) {
+    animation-delay: 0.12s;
+  }
+  .app__content > .page > :nth-child(4) {
+    animation-delay: 0.18s;
+  }
+  .app__content > .page > :nth-child(5) {
+    animation-delay: 0.24s;
+  }
+  .app__content > .page > :nth-child(n + 6) {
+    animation-delay: 0.3s;
+  }
+  .app__content > .page > .confetti {
+    animation: none;
+  }
+
+  /* Lists and grids fill in one row at a time. */
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > * {
+    animation: rise-in 0.5s var(--ease) backwards;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(2) {
+    animation-delay: 0.05s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(3) {
+    animation-delay: 0.1s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(4) {
+    animation-delay: 0.15s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(5) {
+    animation-delay: 0.2s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(6) {
+    animation-delay: 0.25s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(7) {
+    animation-delay: 0.3s;
+  }
+  :is(.svc-grid, .steps, .notif-list, .table tbody, .cart__lines, .track-list, .updates, .latest-list, .starter, .stats, .pdp__info) > :nth-child(n + 8) {
+    animation-delay: 0.35s;
+  }
+
+  .welcome .h1 {
+    animation: register 1.1s var(--ease) 0.15s backwards;
+  }
+  .welcome::before,
+  .hubpage__hero::before {
+    animation: dots-drift 22s linear infinite;
+  }
+  .welcome::after,
+  .done::before {
+    transform-origin: left center;
+    animation: draw-x 1s var(--ease) 0.3s backwards;
+  }
+
+  .pdp__media .product-img {
+    animation: print-feed 1.1s var(--ease-print) 0.1s backwards;
+  }
+
+  /* Progress rails fill segment by segment; the current one keeps "printing". */
+  .rail__step.is-done .rail__seg::after {
+    animation: draw-x 0.45s var(--ease) backwards;
+    animation-delay: calc(0.2s + var(--i, 0) * 140ms);
+  }
+  .rail__step.is-current .rail__seg::after {
+    animation: draw-x 0.45s var(--ease) backwards, stripes 0.9s linear infinite;
+    animation-delay: calc(0.2s + var(--i, 0) * 140ms), 0s;
+  }
+
+  /* Timeline: steps draw in; the current step pulses. */
+  .timeline__step {
+    animation: rise-in 0.5s var(--ease) backwards;
+    animation-delay: calc(var(--i, 0) * 160ms);
+  }
+  .timeline__step.is-done::before {
+    animation: line-draw 0.6s var(--ease) backwards;
+    animation-delay: calc(0.3s + var(--i, 0) * 160ms);
+  }
+  .timeline__step.is-done .timeline__dot,
+  .timeline__step.is-current .timeline__dot {
+    animation: pop-in 0.45s var(--ease-back) backwards;
+    animation-delay: calc(0.1s + var(--i, 0) * 160ms);
+  }
+  .timeline__step.is-current .timeline__dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border: 2px solid var(--magenta);
+    border-radius: 50%;
+    opacity: 0;
+    animation: ring-ping 1.8s ease-out 1s infinite;
+  }
+
+  .bell-ring {
+    transform-origin: 50% 10%;
+    animation: bell 1s var(--ease) 0.3s;
+  }
+  .count--pop {
+    animation: pop-in 0.4s var(--ease-back);
+  }
+  .option.is-checked > svg {
+    animation: pop-in 0.35s var(--ease-back);
+  }
+
+  .done__ref {
+    animation: register 1s var(--ease) 0.35s backwards;
+  }
+  .done__facts > div {
+    animation: rise-in 0.5s var(--ease) 0.45s backwards;
+  }
+  .done__facts > div:nth-child(2) {
+    animation-delay: 0.55s;
+  }
+  .done__facts > div:nth-child(3) {
+    animation-delay: 0.65s;
+  }
+  .done__actions {
+    animation: rise-in 0.5s var(--ease) 0.8s backwards;
+  }
+  .empty__note {
+    animation: write-on 1.2s var(--ease) 0.5s backwards;
+  }
+}
+
+@keyframes plate-shift {
+  from {
+    transform: translate(0, 0);
+  }
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    translate: -18px 0;
+  }
+}
+@keyframes line-draw {
+  from {
+    background-size: 100% 0%;
+  }
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+  }
+  .trail,
+  .confetti,
+  .scroll-progress,
+  .ticker {
+    display: none !important;
+  }
+}
