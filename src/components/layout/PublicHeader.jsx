@@ -15,6 +15,9 @@ const LINKS = [
 
 export default function PublicHeader() {
   const { user } = useAuth();
+  // The public site is for customers. A staff or admin login from another tab
+  // does not change it; staff reach the panel from the footer's Staff login.
+  const customer = user?.role === 'customer' ? user : null;
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
@@ -49,9 +52,9 @@ export default function PublicHeader() {
           ))}
         </nav>
         <div className="site-header__actions">
-          {user ? (
-            <Link to={user.role === 'customer' ? '/app' : '/admin'} className="btn btn--ink btn--sm">
-              {user.role === 'customer' ? 'Go to dashboard' : 'Go to admin panel'}
+          {customer ? (
+            <Link to="/app" className="btn btn--ink btn--sm">
+              Go to dashboard
             </Link>
           ) : (
             <>
@@ -83,7 +86,7 @@ export default function PublicHeader() {
             </a>
           ))}
         </nav>
-        {!user && (
+        {!customer && (
           <div className="mobile-nav__actions">
             <Link to="/login" className="btn btn--ghost btn--block" onClick={() => setOpen(false)}>
               Log in
