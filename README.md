@@ -42,7 +42,7 @@ The customer login page (`/login`) lists the two customer accounts and the staff
 6. **My Projects / Notifications / Profile**: show the new project, mark notifications as read, and upload a profile picture.
 7. **Admin panel**: open a second tab at `/admin/login` and log in as staff. Approve the order you just placed, quote and approve the digital request, then send a draft file. The customer tab updates on its own: new status, notification, and the draft to download.
 8. **Products & Stock**: change a price or hide a product, then refresh the customer shop to show the change.
-9. **Reports** (as the administrator): switch between **This month** and **Last 12 months** to show the seasonal peaks, open each tab, and use **Download CSV** or **Print or save as PDF**.
+9. **Reports** (as the administrator): switch between **This month** and **Last 12 months** to show the seasonal peaks, then filter, for example **Custom dates** December 1 to 31 with **Category: Customized Products** to show the Christmas rush. Hide sections you don't need, and use **Download CSV** or **Print or save as PDF**.
 
 To start fresh before a presentation, go to **Profile → Reset demo data** (in the customer platform). This clears everything saved in the browser and restores the sample data.
 
@@ -76,7 +76,9 @@ The panel has:
   - **Customers**: first-time and returning buyers over time, where customers come from (barangay or town), and the top customers.
   - **Operations**: time to approve orders and confirm requests, how long orders take, a heatmap of busy days and hours, open work by age, and each team member's workload.
 
-  **Download CSV** saves the rows behind the current tab for Excel. **Print or save as PDF** prints a clean landscape copy with the shop name, the period, and who prepared it.
+  **Filters** narrow any report to what the administrator needs: **Custom dates** (any from/to range), **Category** (one shop category, or digital services only), **Digital service**, **Payment** (GCash, cash, Maya), **Pickup or delivery**, and **Customer area** (Calapan City or other towns). Each tab offers only the filters that make sense for it. Comparisons with the previous period use the same filters, the report header lists the active filters, and the whole setup is kept in the page address, so a filtered report can be bookmarked or shared. **Sections** hides parts of a report the administrator does not need (for example, only the heatmap and team workload on Operations). The choice is remembered in that browser and applies to the printout.
+
+  **Download CSV** saves the rows behind the current tab (with the filters applied) for Excel. **Print or save as PDF** prints a clean landscape copy with the shop name, the period, the filters, and who prepared it.
 - **Team** (administrator only): everyone who can use the panel, their role and last sign-in. Add team members with a temporary password, switch roles, or deactivate an account so it can no longer log in. The shop always keeps at least one active administrator.
 
 Every status change creates a notification for that customer and is recorded with the name of the staff member who made it. Each browser tab keeps its own login, so the admin panel and a customer account can run side by side in one browser; changes in one tab appear in the other without a reload.

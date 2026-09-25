@@ -51,7 +51,10 @@ export const PERIODS = [
   { id: 'last-month', label: 'Last month' },
   { id: 'quarter', label: 'Last 3 months' },
   { id: 'year', label: 'Last 12 months' },
+  { id: 'custom', label: 'Custom dates' },
 ];
+
+export const toDateInput = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 
 export function rangeText(start, end) {
   const last = addDays(end, -1);
@@ -62,7 +65,8 @@ export function rangeText(start, end) {
   return `${md(start)} to ${md(last)}, ${y(last)}`;
 }
 
-export function resolvePeriod(id, now = new Date()) {
+// `range` is { from, to } as YYYY-MM-DD, used by the custom period.
+export function resolvePeriod(id, now = new Date(), range = {}) {
   const today = startOfDay(now);
   const tomorrow = addDays(today, 1);
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -79,6 +83,18 @@ export function resolvePeriod(id, now = new Date()) {
     title: rangeText(start, end),
     prevTitle: rangeText(prevStart, prevEnd),
   });
+  if (id === 'custom') {
+    const parse = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v ?? '') ? new Date(`${v}T00:00:00`) : null);
+    let from = parse(range.from) ?? addDays(today, -29);
+    let to = parse(range.to) ?? today;
+    if (from > to) [from, to] = [to, from];
+    if (to > today) to = today;
+    if (from > to) from = to;
+    const end = addDays(to, 1);
+    const days = Math.round((end - from) / DAY);
+    const unit = days <= 31 ? 'day' : days <= 120 ? 'week' : 'month';
+    return make(from, end, addDays(from, -days), from, unit, `the ${days} days before`);
+  }
   if (id === 'last-month') {
     const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     const prevStart = new Date(today.getFullYear(), today.getMonth() - 2, 1);
@@ -107,11 +123,18 @@ export function buckets(period) {
   if (period.unit === 'month') {
     for (let d = period.start; d < period.end; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
       const next = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+      const end = next < period.end ? next : period.end;
+      // A whole calendar month is named, the current one says "so far", and
+      // anything else (custom ranges) shows its dates.
+      const current = next > period.end && period.end >= addDays(startOfDay(new Date()), 1);
+      const whole = d.getDate() === 1 && (next <= period.end || current);
       out.push({
         start: d,
-        end: next < period.end ? next : period.end,
+        end,
         label: d.toLocaleDateString('en-PH', { month: 'short' }),
-        tip: `${d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })}${next > period.end ? ' (so far)' : ''}`,
+        tip: whole
+          ? `${d.toLocaleDateString('en-PH', { month: 'long', year: 'numeric' })}${current ? ' (so far)' : ''}`
+          : rangeText(d, end),
       });
     }
   } else if (period.unit === 'week') {
@@ -139,6 +162,103 @@ const slice = (data, a, b) => ({
 
 const doneAt = (item) => item.history.find((h) => h.status === 'completed')?.at ?? null;
 const stepAt = (item, status) => item.history.find((h) => h.status === status)?.at ?? null;
+
+// ------------------------------------------------------------------
+// Filters: narrow the data before any report is built, so every figure
+// and its comparison use the same slice.
+// ------------------------------------------------------------------
+export const FILTERS = {
+  category: {
+    param: 'cat',
+    label: 'Category',
+    all: 'All categories',
+    options: [...categories.map((c) => ({ id: c.id, label: c.name })), { id: 'digital', label: 'Digital services' }],
+  },
+  service: {
+    param: 'svc',
+    label: 'Digital service',
+    all: 'All services',
+    options: digitalServices.filter((s) => s.id !== 'rush').map((s) => ({ id: s.id, label: s.short })),
+  },
+  payment: {
+    param: 'pay',
+    label: 'Payment',
+    all: 'All payments',
+    options: [
+      { id: 'gcash', label: 'GCash' },
+      { id: 'cash', label: 'Cash' },
+      { id: 'maya', label: 'Maya' },
+    ],
+  },
+  handoff: {
+    param: 'ho',
+    label: 'Pickup or delivery',
+    all: 'Pickup and delivery',
+    options: [
+      { id: 'pickup', label: 'Pickup only' },
+      { id: 'delivery', label: 'Delivery only' },
+    ],
+  },
+  place: {
+    param: 'area',
+    label: 'Customer area',
+    all: 'All areas',
+    options: [
+      { id: 'city', label: 'Calapan City' },
+      { id: 'province', label: 'Other towns' },
+    ],
+  },
+};
+
+// Plain-language list of the active filters, for the report header and print.
+export function describeFilters(f) {
+  return Object.entries(FILTERS)
+    .filter(([key]) => f[key])
+    .map(([key, def]) => def.options.find((o) => o.id === f[key])?.label)
+    .filter(Boolean);
+}
+
+// f: { category, service, payment, handoff, place }, each '' for "all".
+export function filterData(data, f) {
+  const categoryOf = Object.fromEntries(data.products.map((p) => [p.id, p.category]));
+  const shopCategory = f.category && f.category !== 'digital' ? f.category : '';
+  const digitalOnly = f.category === 'digital' || Boolean(f.service);
+  const orderOnly = Boolean(f.payment || f.handoff);
+  const inArea = (address = '') => !f.place || (f.place === 'city') === /calapan/i.test(address);
+  const notes = [];
+
+  let orders = digitalOnly
+    ? []
+    : data.orders.filter(
+        (o) => (!f.payment || o.payment === f.payment) && (!f.handoff || o.fulfillment === f.handoff) && inArea(o.customer.address)
+      );
+  if (shopCategory) {
+    orders = orders
+      .map((o) => {
+        const items = o.items.filter((i) => (categoryOf[i.productId] ?? 'custom') === shopCategory);
+        const subtotal = sum(items, (i) => i.price * i.qty);
+        return { ...o, items, subtotal, deliveryFee: 0, total: subtotal };
+      })
+      .filter((o) => o.items.length);
+    notes.push('Only items in this category are counted, without delivery fees.');
+  }
+
+  const projects =
+    shopCategory || orderOnly
+      ? []
+      : data.projects.filter((p) => (!f.service || p.serviceId === f.service) && inArea(p.customer.address));
+  if (orderOnly && !digitalOnly && !shopCategory) notes.push('Digital services are left out because they have no payment method or pickup option.');
+  if (digitalOnly && orderOnly) notes.push('Digital services have no payment method or pickup option, so nothing matches these filters together.');
+
+  return {
+    ...data,
+    orders,
+    projects,
+    products: shopCategory ? data.products.filter((p) => p.category === shopCategory) : data.products,
+    customers: f.place ? data.customers.filter((c) => inArea(c.address)) : data.customers,
+    notes,
+  };
+}
 
 // ------------------------------------------------------------------
 // Sales
@@ -191,8 +311,9 @@ export function salesReport(data, period) {
     ...categories.map((c) => ({ id: c.id, label: c.name, value: ct[c.id], prev: cp[c.id] })),
     { id: 'digital', label: 'Digital services', value: ct.digital, prev: cp.digital },
   ]
+    .filter((r) => r.value || r.prev)
     .sort((a, b) => b.value - a.value)
-    .concat({ id: 'delivery', label: 'Delivery fees', value: ct.delivery, prev: cp.delivery, muted: true })
+    .concat(ct.delivery || cp.delivery ? [{ id: 'delivery', label: 'Delivery fees', value: ct.delivery, prev: cp.delivery, muted: true }] : [])
     .map((r) => ({ ...r, share: t.revenue ? r.value / t.revenue : 0 }));
 
   const productMap = new Map();
@@ -227,14 +348,19 @@ export function salesReport(data, period) {
     findings.push(`Revenue was ${formatPeso(t.revenue)}${changeWords(t.revenue, p.revenue, period.against)}.`);
     const lead = catRows[0];
     findings.push(`${lead.label} brought in the most: ${formatPeso(lead.value)}, or ${pct(lead.share)} of revenue.`);
+    // Growth from a tiny base (a few hundred pesos) says little, so it needs ₱1,000 before.
     const grower = catRows
-      .filter((r) => !r.muted && r.prev > 0 && r.value > 0)
+      .filter((r) => !r.muted && r.prev >= 1000 && r.value > 0)
       .map((r) => ({ ...r, c: change(r.value, r.prev) }))
       .sort((a, b) => b.c - a.c)[0];
     if (period.against && grower && grower.c > 0.05) findings.push(`${grower.label} grew the fastest, up ${pct(grower.c)} from ${period.against}.`);
     const best = series.reduce((a, b) => (b.values.shop + b.values.digital > a.values.shop + a.values.digital ? b : a), series[0]);
-    if (period.unit !== 'day' && best)
-      findings.push(`The best ${period.unit} was ${best.tip.replace(' (so far)', '')}, with ${formatPeso(best.values.shop + best.values.digital)}.`);
+    if (period.unit !== 'day' && best) {
+      const when = best.tip.replace(' (so far)', '');
+      findings.push(
+        `The best ${period.unit} was ${period.unit === 'week' ? `the ${when[0].toLowerCase()}${when.slice(1)}` : when}, with ${formatPeso(best.values.shop + best.values.digital)}.`
+      );
+    }
     if (topProducts[0]) findings.push(`The best seller was ${topProducts[0].label}: ${plural(topProducts[0].units, 'pc', 'pcs')} for ${formatPeso(topProducts[0].revenue)}.`);
     const online = payment[0].value + payment[2].value;
     if (t.orders) findings.push(`${pct(online / t.orders)} of orders were paid by GCash or Maya; the rest paid cash at the counter.`);
@@ -312,6 +438,7 @@ export function productsReport(data, period) {
   const madeToOrder = rows.filter((r) => !r.stocked && r.units > 0).sort((a, b) => b.revenue - a.revenue);
 
   const byCategory = categories
+    .filter((c) => rows.some((r) => r.category === c.id))
     .map((c) => ({ id: c.id, label: c.name, value: sum(rows.filter((r) => r.category === c.id), (r) => r.units) }))
     .sort((a, b) => b.value - a.value);
 

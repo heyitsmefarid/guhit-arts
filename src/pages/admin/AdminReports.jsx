@@ -1,21 +1,26 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Boxes, Download, Printer, Receipt, Sparkles, Timer, Users } from 'lucide-react';
+import { Boxes, Download, ListChecks, Printer, Receipt, SlidersHorizontal, Sparkles, Timer, Users } from 'lucide-react';
 import PageHeader from '../../components/ui/PageHeader';
 import Logo from '../../components/brand/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { useAdmin } from '../../context/AdminContext';
 import { useToast } from '../../context/ToastContext';
+import { storage } from '../../services/storage';
 import {
+  FILTERS,
   PERIODS,
   customersReport,
+  describeFilters,
   digitalReport,
   downloadCsv,
+  filterData,
   operationsReport,
   productsReport,
   resolvePeriod,
   salesReport,
   toCsv,
+  toDateInput,
 } from '../../utils/reports';
 import { itemsSummary } from '../../utils/admin';
 import { statusLabel } from '../../data/statuses';
@@ -37,6 +42,15 @@ const TABS = [
     title: 'Sales report',
     build: salesReport,
     Body: SalesReport,
+    filters: ['category', 'service', 'payment', 'handoff', 'place'],
+    sections: [
+      { id: 'findings', label: 'What stands out' },
+      { id: 'kpis', label: 'Summary figures' },
+      { id: 'trend', label: 'Revenue over time' },
+      { id: 'paid', label: 'How customers paid' },
+      { id: 'categories', label: 'Revenue by category' },
+      { id: 'products', label: 'Best-selling products' },
+    ],
     csv: (r) => ({
       name: 'sales',
       text: toCsv(
@@ -65,6 +79,15 @@ const TABS = [
     title: 'Products and stock report',
     build: productsReport,
     Body: ProductsReport,
+    filters: ['category'],
+    sections: [
+      { id: 'findings', label: 'What stands out' },
+      { id: 'kpis', label: 'Summary figures' },
+      { id: 'units', label: 'Units sold by category' },
+      { id: 'coverage', label: 'Stock coverage' },
+      { id: 'made', label: 'Made-to-order products' },
+      { id: 'slow', label: 'Slow movers' },
+    ],
     csv: (r) => ({
       name: 'products',
       text: toCsv(
@@ -91,6 +114,17 @@ const TABS = [
     title: 'Digital Help Hub report',
     build: digitalReport,
     Body: DigitalReport,
+    filters: ['service', 'place'],
+    sections: [
+      { id: 'findings', label: 'What stands out' },
+      { id: 'kpis', label: 'Summary figures' },
+      { id: 'trend', label: 'Requests over time' },
+      { id: 'stages', label: 'Open requests right now' },
+      { id: 'services', label: 'By service' },
+      { id: 'rounds', label: 'Rounds of changes' },
+      { id: 'quotes', label: 'Quotes and rush jobs' },
+      { id: 'prices', label: 'Average price by service' },
+    ],
     csv: (r) => ({
       name: 'digital-requests',
       text: toCsv(r.created, [
@@ -115,6 +149,14 @@ const TABS = [
     title: 'Customers report',
     build: customersReport,
     Body: CustomersReport,
+    filters: ['category', 'service', 'payment', 'handoff', 'place'],
+    sections: [
+      { id: 'findings', label: 'What stands out' },
+      { id: 'kpis', label: 'Summary figures' },
+      { id: 'trend', label: 'Customers over time' },
+      { id: 'places', label: 'Where customers are from' },
+      { id: 'top', label: 'Top customers' },
+    ],
     csv: (r) => ({
       name: 'customers',
       text: toCsv(r.ranked, [
@@ -135,6 +177,14 @@ const TABS = [
     title: 'Operations report',
     build: operationsReport,
     Body: OperationsReport,
+    filters: ['category', 'handoff'],
+    sections: [
+      { id: 'findings', label: 'What stands out' },
+      { id: 'kpis', label: 'Summary figures' },
+      { id: 'heat', label: 'When orders come in' },
+      { id: 'age', label: 'Open work by age' },
+      { id: 'team', label: 'Team workload' },
+    ],
     csv: (r) => ({
       name: 'team-workload',
       text: toCsv(r.team, [
@@ -148,25 +198,91 @@ const TABS = [
   },
 ];
 
+const HIDDEN_KEY = 'reportSections'; // { [tabId]: [hidden section ids] }, per browser
+
 export default function AdminReports() {
   const { user } = useAuth();
   const data = useAdmin();
   const { toast } = useToast();
   const [params, setParams] = useSearchParams();
+  const [hiddenByTab, setHiddenByTab] = useState(() => storage.get(HIDDEN_KEY, {}));
   const tab = TABS.find((t) => t.id === params.get('tab')) ?? TABS[0];
+
+  // Period, including a custom date range
   const periodId = PERIODS.some((p) => p.id === params.get('period')) ? params.get('period') : 'month';
-  const period = useMemo(() => resolvePeriod(periodId), [periodId]);
-  const report = useMemo(() => (data.loading ? null : tab.build(data, period)), [data, tab, period]);
+  const from = params.get('from') ?? '';
+  const to = params.get('to') ?? '';
+  const period = useMemo(() => resolvePeriod(periodId, new Date(), { from, to }), [periodId, from, to]);
+  const today = toDateInput(new Date());
+
+  // Filters this tab supports, read from the URL so a filtered report can be bookmarked.
+  const filters = Object.fromEntries(
+    Object.entries(FILTERS).map(([key, def]) => {
+      const value = params.get(def.param) ?? '';
+      const ok =
+        tab.filters.includes(key) &&
+        def.options.some((o) => o.id === value) &&
+        !(key === 'category' && tab.id === 'products' && value === 'digital');
+      return [key, ok ? value : ''];
+    })
+  );
+  if (filters.category && filters.category !== 'digital') filters.service = '';
+  const filterKey = JSON.stringify(filters);
+  const active = describeFilters(filters);
+
+  const filtered = useMemo(
+    () => (data.loading ? null : filterData(data, JSON.parse(filterKey))),
+    [data, filterKey]
+  );
+  const report = useMemo(() => (filtered ? tab.build(filtered, period) : null), [filtered, tab, period]);
+
+  // Sections the administrator chose to show on this tab
+  const hidden = hiddenByTab[tab.id] ?? [];
+  const show = (id) => !hidden.includes(id);
+  const setHidden = (list) => {
+    const next = { ...hiddenByTab, [tab.id]: list };
+    setHiddenByTab(next);
+    storage.set(HIDDEN_KEY, next);
+  };
+  const toggleSection = (id) => setHidden(show(id) ? [...hidden, id] : hidden.filter((h) => h !== id));
 
   const link = (patch) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
     return `?${next.toString()}`;
   };
+  // Built from the live address bar rather than the last render, so two quick
+  // changes in a row (like From, then To) both stick.
+  const update = (patch) =>
+    setParams(
+      () => {
+        const next = new URLSearchParams(window.location.search);
+        Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
+        return next;
+      },
+      { replace: true }
+    );
+  const choosePeriod = (id) =>
+    update(
+      id === 'custom'
+        ? { period: 'custom', from: from || toDateInput(period.start), to: to || toDateInput(new Date(period.end - 1)) }
+        : { period: id === 'month' ? null : id, from: null, to: null }
+    );
+  const fromValue = from || toDateInput(period.start);
+  const toValue = to || toDateInput(new Date(period.end - 1));
+  const onDate = (key) => (e) => {
+    const v = e.target.value;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 2000) update({ [key]: v });
+  };
+  const clearFilters = () =>update(Object.fromEntries(Object.values(FILTERS).map((d) => [d.param, null])));
+
+  const visibleFilters = tab.filters.filter((key) => !(key === 'service' && filters.category && filters.category !== 'digital'));
+  const optionsFor = (key) =>
+    FILTERS[key].options.filter((o) => !(key === 'category' && tab.id === 'products' && o.id === 'digital'));
 
   const onDownload = () => {
     const { name, text } = tab.csv(report);
-    const file = `guhit-${name}-${day(period.start.toISOString())}-to-${day(new Date(period.end - 1).toISOString())}.csv`;
+    const file = `guhit-${name}-${toDateInput(period.start)}-to-${toDateInput(new Date(period.end - 1))}${active.length ? '-filtered' : ''}.csv`;
     downloadCsv(file, text);
     toast(`Downloaded ${file}`);
   };
@@ -175,7 +291,7 @@ export default function AdminReports() {
     <div className="page reports">
       <PageHeader
         title="Reports"
-        description="How the shop is doing, with every number compared to the period before. Download the rows as CSV for Excel, or print a copy."
+        description="How the shop is doing, with every number compared to the period before. Narrow a report with the filters, choose which sections to show, then download the rows as CSV or print a copy."
         actions={
           <>
             <button type="button" className="btn btn--ghost" onClick={onDownload} disabled={!report}>
@@ -205,16 +321,72 @@ export default function AdminReports() {
         </nav>
         <div className="segmented" role="group" aria-label="Report period">
           {PERIODS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              aria-pressed={periodId === p.id}
-              onClick={() => setParams(new URLSearchParams(link({ period: p.id === 'month' ? null : p.id }).slice(1)), { replace: true })}
-            >
+            <button key={p.id} type="button" aria-pressed={periodId === p.id} onClick={() => choosePeriod(p.id)}>
               {p.label}
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="report-filters">
+        <p className="report-filters__title">
+          <SlidersHorizontal size={17} aria-hidden="true" /> Filters
+        </p>
+        {periodId === 'custom' && (
+          <>
+            {/* Uncontrolled, so typing a date is never interrupted; the report
+                follows as soon as the date is complete and valid. */}
+            <label className="report-filter">
+              <span>From</span>
+              <input type="date" className="input" defaultValue={fromValue} max={today} onChange={onDate('from')} />
+            </label>
+            <label className="report-filter">
+              <span>To</span>
+              <input type="date" className="input" defaultValue={toValue} max={today} onChange={onDate('to')} />
+            </label>
+          </>
+        )}
+        {visibleFilters.map((key) => (
+          <label key={key} className={`report-filter ${filters[key] ? 'is-set' : ''}`}>
+            <span>{FILTERS[key].label}</span>
+            <select className="select select--sm" value={filters[key]} onChange={(e) => update({ [FILTERS[key].param]: e.target.value || null })}>
+              <option value="">{FILTERS[key].all}</option>
+              {optionsFor(key).map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+        {active.length > 0 && (
+          <button type="button" className="report-filters__clear" onClick={clearFilters}>
+            Clear filters
+          </button>
+        )}
+
+        <details className="report-sections">
+          <summary>
+            <ListChecks size={17} aria-hidden="true" /> Sections
+            <span className="report-sections__count num">
+              {tab.sections.length - hidden.length} of {tab.sections.length}
+            </span>
+          </summary>
+          <div className="report-sections__menu">
+            <p className="small muted">Show in this report and its printout:</p>
+            {tab.sections.map((s) => (
+              <label key={s.id} className="report-sections__item">
+                <input type="checkbox" checked={show(s.id)} onChange={() => toggleSection(s.id)} />
+                {s.label}
+              </label>
+            ))}
+            <div className="report-sections__actions">
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setHidden([])} disabled={!hidden.length}>
+                Show all
+              </button>
+            </div>
+          </div>
+        </details>
       </div>
 
       <header className="report-head">
@@ -235,10 +407,25 @@ export default function AdminReports() {
               : 'Month by month since online orders began. There is no earlier year to compare with.'}
           </span>
         </p>
+        {active.length > 0 && (
+          <p className="report-head__filters">
+            <SlidersHorizontal size={15} aria-hidden="true" /> Filtered to {active.join(', ')}.
+            {filtered?.notes.map((n) => ` ${n}`)}
+          </p>
+        )}
       </header>
 
       {report ? (
-        <tab.Body report={report} period={period} data={data} />
+        hidden.length === tab.sections.length ? (
+          <div className="panel report-empty">
+            <p>Every section of this report is hidden.</p>
+            <button type="button" className="btn btn--ink btn--sm" onClick={() => setHidden([])}>
+              Show all sections
+            </button>
+          </div>
+        ) : (
+          <tab.Body report={report} period={period} data={filtered} show={show} />
+        )
       ) : (
         <div className="sk-block" style={{ height: 520 }} aria-busy="true" aria-label="Loading report" />
       )}
