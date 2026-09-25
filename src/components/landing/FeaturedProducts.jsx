@@ -2,6 +2,26 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../shop/ProductCard';
 import { categories, products } from '../../data/products';
+import { prefersReducedMotion } from '../../utils/motion';
+
+// Cards lean toward the mouse, with a glare where the light would catch.
+function tilt(e) {
+  const card = e.target.closest?.('.pcard');
+  if (!card || e.pointerType !== 'mouse' || prefersReducedMotion()) return;
+  const r = card.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width;
+  const py = (e.clientY - r.top) / r.height;
+  card.style.setProperty('--ry', `${((px - 0.5) * 10).toFixed(2)}deg`);
+  card.style.setProperty('--rx', `${((0.5 - py) * 8).toFixed(2)}deg`);
+  card.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`);
+  card.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`);
+}
+function untilt(e) {
+  const card = e.target.closest?.('.pcard');
+  if (!card || card.contains(e.relatedTarget)) return;
+  card.style.setProperty('--rx', '0deg');
+  card.style.setProperty('--ry', '0deg');
+}
 
 export default function FeaturedProducts() {
   const [category, setCategory] = useState('featured');
@@ -43,7 +63,7 @@ export default function FeaturedProducts() {
         </div>
 
         {/* Keyed by category so the cards deal in again when the filter changes. */}
-        <div className="product-grid" key={category} data-reveal>
+        <div className="product-grid" key={category} data-reveal onPointerMove={tilt} onPointerOut={untilt}>
           {shown.map((p, i) => (
             <ProductCard key={p.id} index={i} product={p} to={loginTo(`/app/shop/${p.id}`)} publicMode />
           ))}

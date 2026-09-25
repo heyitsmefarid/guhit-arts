@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import PublicHeader from '../../components/layout/PublicHeader';
 import PublicFooter from '../../components/layout/PublicFooter';
 import RegMark from '../../components/brand/RegMark';
+import InkFilters from '../../components/brand/InkFilters';
 import Ticker from '../../components/fx/Ticker';
 import Hero from '../../components/landing/Hero';
 import Services from '../../components/landing/Services';
@@ -18,6 +19,7 @@ export default function Landing() {
         Skip to content
       </a>
       <div className="scroll-progress" aria-hidden="true" />
+      <InkFilters />
       <PublicHeader />
       <main id="main">
         <Hero />

@@ -625,11 +625,11 @@
   }
 
   /* ---------- Studio: the press run ---------- */
-  /* Each plate flashes past in turn, sliding toward register, then your ink lands. */
+  /* The plates flash past in turn, sliding toward register... */
   .plate-run--c,
   .plate-run--m,
   .plate-run--y {
-    animation: plate-flash 0.55s var(--ease) both;
+    animation: plate-flash 0.45s var(--ease) both;
   }
   .plate-run--c {
     --dx: -9px;
@@ -638,24 +638,80 @@
   .plate-run--m {
     --dx: 8px;
     --dy: -5px;
-    animation-delay: 0.35s;
+    animation-delay: 0.15s;
   }
   .plate-run--y {
     --dx: 4px;
     --dy: 8px;
-    animation-delay: 0.7s;
+    animation-delay: 0.3s;
   }
-  .is-printing .plate-run--final {
-    animation: press-plate 0.5s var(--ease) 1.05s both;
+  /* ...then the roller lays the ink down behind it... */
+  .roller {
+    transform: translateX(var(--from));
+    animation: roll 1.2s var(--ease-print) 0.5s both, roller-out 0.25s linear 1.72s forwards;
   }
-  .studio__sweep {
-    animation: press-sweep 1.6s var(--ease-print) both;
+  .reveal-rect {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: reveal-x 1.2s var(--ease-print) 0.5s both;
   }
-  .is-printed svg {
-    animation: proof-settle 0.5s var(--ease-back);
+  /* ...and the proof gets its stamp. */
+  .studio__stamp {
+    animation: stamp-slam 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) 0.15s both;
   }
+  .studio__proof.is-printed svg {
+    animation: proof-thump 0.3s var(--ease) 0.3s;
+  }
+  .slip__print:disabled {
+    animation: stripes 0.5s linear infinite;
+  }
+  .slip__estimate strong {
+    animation: count-pop 0.35s var(--ease-back);
+  }
+  /* The pencil sketches each letter, then fills it in. */
   .art--sketch text {
-    animation: write-on 0.6s var(--ease) backwards;
+    stroke: var(--sketch-ink);
+    stroke-width: 0.9px;
+    stroke-dasharray: 260;
+    animation: pencil-draw 1.4s var(--ease) both;
+  }
+  .art--sketch .art__sub {
+    animation-delay: 0.35s;
+  }
+  /* Idle life: the shirt sways on its hanger, the pin floats, the tarpaulin flutters. */
+  .mock-sway {
+    transform-box: view-box;
+    transform-origin: 240px 14px;
+    animation: sway 5.5s ease-in-out infinite;
+  }
+  .mock-float {
+    animation: float 4.2s ease-in-out infinite;
+  }
+  .mock-float-shadow {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: float-shadow 4.2s ease-in-out infinite;
+  }
+  .mock-flutter {
+    transform-box: view-box;
+    transform-origin: 240px 186px;
+    animation: flutter 3.4s ease-in-out infinite;
+  }
+
+  /* ---------- Landing: stamps, headline letters, cards ---------- */
+  .hero__stamp {
+    animation: seal-slam 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) 1.5s both;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .hero__char:hover {
+      animation: misregister 0.7s var(--ease);
+    }
+    .products .pcard:hover {
+      transform: perspective(900px) translateY(-4px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    }
+  }
+  .ticker__item {
+    transform: skewX(var(--lean, 0deg));
   }
 
   /* ---------- Product cards are dealt onto the table ---------- */
@@ -1000,20 +1056,6 @@
   }
 }
 
-@keyframes press-plate {
-  from {
-    opacity: 0;
-    transform: translate(calc(var(--dx, 0px) * 5), calc(var(--dy, 0px) * 5));
-  }
-  60% {
-    opacity: 1;
-    transform: translate(var(--dx, 0px), var(--dy, 0px));
-  }
-  to {
-    opacity: 1;
-    transform: translate(0, 0);
-  }
-}
 @keyframes plate-flash {
   0% {
     opacity: 0;
@@ -1028,14 +1070,127 @@
     transform: translate(0, 0);
   }
 }
-@keyframes press-sweep {
+@keyframes roll {
+  from {
+    transform: translateX(var(--from));
+  }
   to {
-    transform: translateX(720px);
+    transform: translateX(var(--to));
   }
 }
-@keyframes proof-settle {
+@keyframes roller-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes reveal-x {
   from {
-    scale: 0.985;
+    transform: scaleX(0);
+  }
+}
+@keyframes stamp-slam {
+  from {
+    opacity: 0;
+    transform: rotate(-11deg) scale(2.4);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-11deg) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-11deg) scale(1);
+  }
+}
+@keyframes seal-slam {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) scale(2.2);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-14deg) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-14deg) scale(1);
+  }
+}
+@keyframes proof-thump {
+  35% {
+    translate: 0 3px;
+  }
+}
+@keyframes count-pop {
+  from {
+    opacity: 0.35;
+    scale: 0.86;
+  }
+}
+@keyframes pencil-draw {
+  0% {
+    stroke-dashoffset: 260;
+    fill-opacity: 0;
+  }
+  62% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+    stroke-opacity: 0.35;
+  }
+}
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-1.6deg);
+  }
+  50% {
+    transform: rotate(1.6deg);
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+@keyframes float-shadow {
+  0%,
+  100% {
+    transform: scaleX(0.84);
+    opacity: 0.13;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 0.22;
+  }
+}
+@keyframes flutter {
+  0%,
+  100% {
+    transform: skewY(0.7deg) rotate(-0.35deg);
+  }
+  50% {
+    transform: skewY(-0.7deg) rotate(0.35deg);
+  }
+}
+@keyframes misregister {
+  0% {
+    text-shadow: none;
+  }
+  25% {
+    translate: 0 -0.04em;
+    text-shadow: -0.07em 0.04em 0 var(--cyan), 0.06em -0.04em 0 var(--magenta), 0.03em 0.07em 0 var(--yellow);
+  }
+  100% {
+    translate: 0 0;
+    text-shadow: 0 0 0 transparent, 0 0 0 transparent, 0 0 0 transparent;
   }
 }
 @keyframes plate-shift {
