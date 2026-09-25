@@ -10,6 +10,7 @@ import { prefersReducedMotion } from '../../utils/motion';
 import { business, divisions } from '../../data/business';
 
 const clamp = (n) => Math.max(-1, Math.min(1, n));
+const TITLE = ['From Your Ideas', 'to Something Real.'];
 
 export default function Hero() {
   const status = openStatus();
@@ -39,9 +40,25 @@ export default function Hero() {
         <p className="hero__doodle hand" aria-hidden="true">
           psst, you can doodle on this page
         </p>
-        <h1 id="hero-title" className="display hero__title">
-          <span className="hero__title-line">From Your Ideas</span>{' '}
-          <span className="hero__title-line">to Something Real.</span>
+        {/* Each letter is its own piece of type: hovering one knocks it out of
+            register for a moment. Screen readers get the plain headline. */}
+        <h1 id="hero-title" className="display hero__title" aria-label="From Your Ideas to Something Real.">
+          {TITLE.map((line, n) => (
+            <span key={line} className="hero__title-line" aria-hidden="true">
+              {n > 0 && ' '}
+              {line.split(/( )/).map((part, i) =>
+                part === ' ' ? ' ' : (
+                  <span key={i} className="hero__word">
+                    {[...part].map((ch, j) => (
+                      <span key={j} className="hero__char">
+                        {ch}
+                      </span>
+                    ))}
+                  </span>
+                )
+              )}
+            </span>
+          ))}
         </h1>
         <GuhitStroke className="hero__stroke" />
 
@@ -86,6 +103,11 @@ export default function Hero() {
             <p className="hero__note hand" aria-hidden="true">
               bring a sketch, leave with the real thing
             </p>
+            <span className="hero__stamp" aria-hidden="true">
+              <span>Since</span>
+              <strong className="num">1979</strong>
+              <small>Calapan City</small>
+            </span>
           </div>
         </div>
       </div>
