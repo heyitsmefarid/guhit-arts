@@ -34,7 +34,7 @@ The customer login page (`/login`) lists the two customer accounts and the staff
 
 ## Suggested presentation walkthrough
 
-1. **Landing page**: hero, the four divisions (hover a photo to see its ink plate), then **Try a design**: type a name, pick a product and an ink, and press **Print it**. **Order this design** carries the text into the product's order note after login. Then featured products, the Digital Help Hub price list, "47 Years of Creativity and Service", and contact.
+1. **Landing page**: hero, the four divisions (hover a photo to see its ink plate), then **Try a design**: type your words or add a logo, pick a product (mug, shirt, button pin, or tarpaulin), its color, an ink, a lettering style, and a quantity, and press **Print it**. The price estimate updates as you go, and **Try an example** fills in a ready-made design. **Order this design** carries the design and quantity to the product page after login. Then featured products, the Digital Help Hub price list, "47 Years of Creativity and Service", and contact.
 2. **Sign up** with a new account, or log in with one of the customer accounts. You land on the dashboard.
 3. **Shop → product → cart → checkout**: add a regular item, then a customized item (for example the Custom Mug) with a design note. Choose delivery and GCash, and place the order.
 4. **Track the order**: open it from My Orders. The shop moves it along from the admin panel (step 7), or use **Prototype control → Move to …** on the tracking page for a quick demo.
@@ -87,7 +87,7 @@ The animations follow one idea: things arrive the way a print does, with the cya
 
 - **Hero**: the headline prints into register, the pencil line draws, and the photos drop onto the table and drift with the mouse. Move the cursor over the hero to **doodle** with a fading pencil line (mouse and pen only).
 - **Services**: each division is one of the four process inks. Its photo first appears as a single-ink separation (cyan, magenta, yellow, key), then the full-color print feeds down over it. Hovering a photo lifts the print to show its plate again.
-- **Try a design**: the text starts as a pencil sketch. **Print it** runs it through the press: the cyan, magenta, and yellow plates flash past into register, then the chosen ink lands on the product.
+- **Try a design**: the design starts as a pencil sketch on a shaded product drawing: a mug with the print curving around it, a shirt with folds, a domed button pin, or a tarpaulin with a slight wave. **Print it** runs it through the press: the cyan, magenta, and yellow plates flash past into register, then the chosen ink lands on the product. White ink is offered on dark products.
 - **Scrolling**: product cards are dealt in, the price list fills row by row, "47 Years" counts up, and the history line draws itself. A CMYK bar at the top shows scroll progress (in Chromium browsers).
 - **Customer platform**: pages ease in, dashboard numbers count up, progress rails fill with a moving "printing" stripe on the current step, items fly into the cart, and order or request confirmations end in CMYK confetti.
 

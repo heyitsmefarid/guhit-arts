@@ -461,7 +461,7 @@
 }
 
 /* ---------- Studio: try an idea on a product ---------- */
-/* The section is a cutting mat: a faint drafting grid under the proof. */
+/* The section is a cutting mat: a faint drafting grid under the work. */
 .studio {
   background-color: var(--paper-2);
   background-image: linear-gradient(rgba(28, 32, 84, 0.055) 1px, transparent 1px),
@@ -476,8 +476,8 @@
   grid-template-rows: auto 1fr;
   grid-template-areas:
     'copy stage'
-    'form stage';
-  gap: 1.5rem clamp(2rem, 5vw, 4.5rem);
+    'slip stage';
+  gap: 1.5rem clamp(2rem, 4.5vw, 4rem);
   align-items: start;
 }
 .studio__copy {
@@ -485,96 +485,29 @@
   display: grid;
   gap: 1rem;
 }
+/* The preview stays in view while the slip scrolls past it. */
 .studio__stage {
   grid-area: stage;
-  align-self: center;
+  position: sticky;
+  top: 96px;
   display: grid;
-  gap: 0.9rem;
-}
-.studio__form {
-  grid-area: form;
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-  gap: 1rem;
-}
-.studio__choices,
-.studio__actions {
-  grid-column: 1 / -1;
-}
-.studio__choices {
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-.studio__choices legend {
-  margin-bottom: 0.5rem;
-  padding: 0;
-  font-size: 0.92rem;
-  font-weight: 650;
-}
-.studio__options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-.studio__option {
-  position: relative;
-}
-.studio__option input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.studio__option > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.95rem;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  font-size: 0.92rem;
-  font-weight: 620;
-  transition: background-color 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
-}
-.studio__option:hover > span {
-  border-color: var(--ink-soft);
-}
-.studio__option input:checked + span {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #fff;
-}
-.studio__option input:focus-visible + span {
-  outline: 3px solid var(--cyan);
-  outline-offset: 2px;
-}
-.studio__swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--div);
-  box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(28, 32, 84, 0.2);
-}
-.studio__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  margin-top: 0.25rem;
+  gap: 0.75rem;
 }
 
 .studio__proof {
   position: relative;
   margin: 0;
-  padding: clamp(0.75rem, 2.5vw, 1.75rem);
+  padding: clamp(0.5rem, 2vw, 1.25rem);
   border-radius: 6px;
-  background: var(--surface);
+  background: radial-gradient(120% 90% at 50% 30%, #ffffff 0%, #ffffff 45%, #e9edf3 100%);
   box-shadow: var(--shadow-lg);
 }
+/* A tarpaulin hangs on a wall; everything else sits on the table. */
+.studio__proof--tarp {
+  background: linear-gradient(#eef1f5, #e3e8ef);
+}
 .studio__proof svg {
+  display: block;
   width: 100%;
   height: auto;
   overflow: visible;
@@ -591,92 +524,362 @@
   font-size: 0.9rem;
   color: var(--graphite);
 }
-.studio__ticket {
+
+/* ---------- The job-order slip ---------- */
+.slip {
+  grid-area: slip;
+  display: grid;
+  gap: 1.15rem;
+  padding: clamp(1.1rem, 2.4vw, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.slip__words {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0.5rem 0.9rem;
+}
+.slip__example {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--magenta-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.slip__example:hover {
+  color: var(--magenta);
+}
+.slip__group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.slip__group legend,
+.slip__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+.slip__picked {
+  margin-left: 0.35rem;
+  font-weight: 500;
+  color: var(--graphite);
+}
+.slip__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.15rem 1rem;
+}
+
+/* Radio inputs sit invisibly over their custom faces. */
+.slip__tile,
+.slip__swatch,
+.slip__look {
+  position: relative;
+}
+.slip__tile input,
+.slip__swatch input,
+.slip__look input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.slip__tile input:focus-visible + span,
+.slip__swatch input:focus-visible + span,
+.slip__look input:focus-visible + span {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.slip__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.slip__tile > span {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.4rem 0.6rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 0.84rem;
+  font-weight: 640;
+  text-align: center;
+  color: var(--ink-soft);
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+.slip__tile:hover > span {
+  border-color: var(--ink-soft);
+  color: var(--ink);
+}
+.slip__tile input:checked + span {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+
+.slip__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.slip__swatch > span {
+  display: block;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(28, 32, 84, 0.22);
+  transition: box-shadow 0.15s var(--ease);
+}
+.slip__swatch input:checked + span {
+  box-shadow: inset 0 0 0 1px rgba(28, 32, 84, 0.22), 0 0 0 3px var(--surface), 0 0 0 5px var(--ink);
+}
+.slip__swatch.is-off > span {
+  opacity: 0.35;
+  background-image: linear-gradient(135deg, transparent 46%, var(--graphite) 46% 54%, transparent 54%) !important;
+}
+.slip__swatch.is-off input {
+  cursor: not-allowed;
+}
+
+.slip__looks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.slip__look > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0.35rem 1rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 0.95rem;
+  transition: border-color 0.15s var(--ease), background-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+/* Each option is set in its own lettering. */
+.slip__look--bold > span {
+  font-weight: 850;
+  font-stretch: 125%;
+}
+.slip__look--hand > span {
+  font-family: var(--font-hand);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.slip__look--outline > span {
+  font-weight: 850;
+  font-stretch: 125%;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--ink);
+}
+.slip__look:hover > span {
+  border-color: var(--ink-soft);
+}
+.slip__look input:checked + span {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  background: var(--paper);
+}
+
+.slip__upload {
+  position: relative;
+  cursor: pointer;
+}
+.slip__upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.slip__upload:focus-within {
+  outline: 3px solid var(--cyan);
+  outline-offset: 2px;
+}
+.slip__file {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.slip__file img {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.slip__file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slip__error {
+  margin-top: 0.4rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+/* The foot tears off like a ticket stub. */
+.slip__foot {
+  position: relative;
+  display: grid;
+  gap: 0.8rem;
+  margin: 0.2rem calc(clamp(1.1rem, 2.4vw, 1.5rem) * -1) calc(clamp(1.1rem, 2.4vw, 1.5rem) * -1);
+  padding: 1.1rem clamp(1.1rem, 2.4vw, 1.5rem) clamp(1.1rem, 2.4vw, 1.5rem);
+  border-top: 2px dashed var(--line-strong);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--paper);
+}
+.slip__foot::before,
+.slip__foot::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--paper-2);
+}
+.slip__foot::before {
+  left: -10px;
+}
+.slip__foot::after {
+  right: -10px;
+}
+.slip__estimate {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 0.1rem 1rem;
+}
+.slip__math {
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+}
+.slip__estimate strong {
+  font-size: 1.6rem;
+  font-weight: 820;
+  font-stretch: 118%;
+  line-height: 1.1;
+}
+.slip__ready {
+  grid-column: 1 / -1;
+  font-size: 0.82rem;
+  color: var(--graphite);
+}
+.slip__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem 1.2rem;
-  padding: 1rem 1.2rem;
-  border: 1.5px dashed var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--surface);
-  transition: border-color 0.3s var(--ease);
+  gap: 0.55rem;
 }
-.studio__ticket.is-ready {
-  border-style: solid;
-  border-color: var(--ink);
+.slip__back {
+  border: 1.5px solid var(--line-strong);
 }
-.studio__ticket-name {
-  font-weight: 750;
-}
-.studio__ticket-meta {
-  font-size: 0.9rem;
+.slip__note {
+  font-size: 0.8rem;
   color: var(--graphite);
 }
 
-/* Product drawings */
-.mock__body {
-  fill: #fff;
+/* ---------- Product drawings ---------- */
+.mock__shadow {
+  fill: #1c2054;
+  opacity: 0.2;
 }
-.mock__line {
-  stroke: var(--line-strong);
-  stroke-width: 2;
-}
-.mock__handle-out {
-  fill: none;
-  stroke: var(--line-strong);
-  stroke-width: 30;
-}
-.mock__handle-in {
+.mock__shine-line {
   fill: none;
   stroke: #fff;
-  stroke-width: 26;
+  stroke-width: 3;
+  stroke-linecap: round;
 }
-.mock__rim {
-  fill: var(--paper);
+.mock__folds path {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: 0.07;
+  stroke-width: 8;
+  stroke-linecap: round;
 }
 .mock__seam {
   fill: none;
-  stroke: var(--line-strong);
   stroke-width: 1.5;
   stroke-dasharray: 3 4;
 }
-.mock__edge {
-  fill: var(--paper-2);
-}
 .mock__gloss {
   fill: none;
-  stroke: var(--paper-2);
-  stroke-width: 9;
+  stroke: #fff;
+  stroke-opacity: 0.75;
+  stroke-width: 10;
   stroke-linecap: round;
 }
 .mock__rope {
   fill: none;
-  stroke: var(--graphite-2);
-  stroke-width: 2;
-}
-.mock__eyelet {
-  fill: var(--paper);
-  stroke: var(--graphite-2);
+  stroke: #8e94a6;
   stroke-width: 2.5;
 }
+.mock__eyelet {
+  fill: #eef0f3;
+  stroke: #8e94a6;
+  stroke-width: 2;
+}
+.mock__eyelet-hole {
+  fill: #8e94a6;
+}
 
-/* The design: pencil while it is an idea, ink once printed */
-.art__main {
+/* ---------- The design: pencil while it is an idea, ink once printed ---------- */
+.art__main,
+.art__sub {
+  fill: var(--print);
+}
+.art--bold .art__main,
+.art--outline .art__main {
   font-family: var(--font);
   font-weight: 850;
   font-stretch: 125%;
   letter-spacing: -0.01em;
-  fill: var(--div);
 }
-.art__sub {
+.art--outline .art__main {
+  fill: none;
+  stroke: var(--print);
+  stroke-width: 1.6px;
+}
+.art--hand .art__main,
+.art--hand .art__sub {
+  font-family: var(--font-hand);
+  font-weight: 700;
+}
+.art--bold .art__sub,
+.art--outline .art__sub {
   font-family: var(--font);
   font-weight: 650;
   letter-spacing: 0.02em;
-  fill: var(--div);
 }
-.studio__proof[data-ink='yellow'] .art:not(.art--sketch) text {
+/* Yellow on a light product gets a thin keyline, as printers do. */
+.art-keyline .plate-run--final text {
   paint-order: stroke;
   stroke: var(--yellow-ink);
   stroke-width: 0.7px;
@@ -691,6 +894,11 @@
   font-weight: 700;
   font-stretch: 100%;
   fill: var(--graphite);
+  stroke: none;
+}
+.art--sketch .art__logo {
+  filter: grayscale(1) contrast(0.9);
+  opacity: 0.55;
 }
 .art__area {
   fill: none;
@@ -698,22 +906,36 @@
   stroke-width: 1.5;
   stroke-dasharray: 6 6;
 }
+.is-dark .art--sketch text {
+  fill: #d7dbe4;
+}
+.is-dark .art__area {
+  stroke: #8e94a6;
+}
 .plate-run {
   mix-blend-mode: multiply;
 }
-.plate-run--c text {
-  fill: var(--cyan);
+.plate-run--final {
+  mix-blend-mode: normal;
 }
-.plate-run--m text {
-  fill: var(--magenta);
+.plate-run--c {
+  --print: var(--cyan);
 }
-.plate-run--y text {
-  fill: var(--yellow);
+.plate-run--m {
+  --print: var(--magenta);
+}
+.plate-run--y {
+  --print: var(--yellow);
 }
 .studio__sweep {
-  fill: rgba(255, 255, 255, 0.6);
+  fill: rgba(255, 255, 255, 0.55);
 }
 
+@media (max-width: 1100px) {
+  .slip__tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 960px) {
   .studio__grid {
     grid-template-columns: minmax(0, 1fr);
@@ -721,12 +943,22 @@
     grid-template-areas:
       'copy'
       'stage'
-      'form';
+      'slip';
+  }
+  .studio__stage {
+    position: static;
+  }
+  .slip__tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-@media (max-width: 480px) {
-  .studio__form {
+@media (max-width: 520px) {
+  .slip__words,
+  .slip__pair {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .slip__tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
