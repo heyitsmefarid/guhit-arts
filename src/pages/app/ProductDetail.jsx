@@ -22,10 +22,11 @@ export default function ProductDetail() {
   const { toast } = useToast();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
-  const [qty, setQty] = useState(1);
   const [params] = useSearchParams();
-  // A design tried on the landing page arrives as ?design= and fills the note.
+  // A design tried on the landing page arrives as ?design= (the note) and ?qty=.
   const design = params.get('design') ?? '';
+  const startQty = Math.min(99, Math.max(1, parseInt(params.get('qty'), 10) || 1));
+  const [qty, setQty] = useState(startQty);
   const [note, setNote] = useState(design);
   const [files, setFiles] = useState([]);
   const [noteError, setNoteError] = useState('');
@@ -34,7 +35,7 @@ export default function ProductDetail() {
     let live = true;
     setData(null);
     setError('');
-    setQty(1);
+    setQty(startQty);
     setNote(design);
     setFiles([]);
     getProduct(productId)
@@ -43,7 +44,7 @@ export default function ProductDetail() {
     return () => {
       live = false;
     };
-  }, [productId, design]);
+  }, [productId, design, startQty]);
 
   if (error) {
     return (
