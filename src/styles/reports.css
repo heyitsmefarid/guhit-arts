@@ -45,6 +45,170 @@
   color: var(--magenta);
 }
 
+/* Filters and the Sections picker share one bar under the tabs. */
+.report-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.7rem 0.9rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.report-filters__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: center;
+  margin-right: 0.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.report-filter {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+.report-filter > span {
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--graphite);
+}
+.report-filter .input {
+  min-height: 38px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.88rem;
+}
+.report-filter.is-set .select {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+  font-weight: 650;
+}
+.report-filters__clear {
+  align-self: center;
+  padding: 0.3rem 0.2rem;
+  border: 0;
+  background: none;
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--magenta-ink);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.report-sections {
+  position: relative;
+  align-self: center;
+  margin-left: auto;
+}
+.report-sections summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  padding: 0.35rem 0.85rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font-size: 0.88rem;
+  font-weight: 650;
+  list-style: none;
+  cursor: pointer;
+}
+.report-sections summary::-webkit-details-marker {
+  display: none;
+}
+.report-sections[open] summary {
+  border-color: var(--ink);
+}
+.report-sections__count {
+  padding: 0.05rem 0.45rem;
+  border-radius: var(--radius-pill);
+  background: var(--paper-2);
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.report-sections__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.15rem;
+  width: max-content;
+  min-width: 240px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+.report-sections__menu > p {
+  margin-bottom: 0.35rem;
+}
+.report-sections__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.2rem;
+  border-radius: 6px;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.report-sections__item:hover {
+  background: var(--paper);
+}
+.report-sections__item input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ink);
+}
+.report-sections__actions {
+  margin-top: 0.4rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.report-head__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  color: var(--yellow);
+}
+.report-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+@media (max-width: 760px) {
+  /* Five periods do not fit on one line on a phone; let them wrap. */
+  .report-toolbar .segmented {
+    flex-wrap: wrap;
+    border-radius: var(--radius-lg);
+  }
+}
+@media (max-width: 640px) {
+  .report-filter {
+    flex: 1 1 140px;
+  }
+  .report-filter .select {
+    width: 100%;
+  }
+  .report-sections {
+    margin-left: 0;
+  }
+  .report-sections__menu {
+    right: auto;
+    left: 0;
+  }
+}
+
 /* The report title reads like the header of a press proof: dark plate,
    CMYK color bar along the bottom edge. */
 .report-head {
@@ -571,6 +735,8 @@
   .toasts,
   .reports .page-head,
   .report-toolbar,
+  .report-filters,
+  .report-empty .btn,
   .chart__tip,
   .heat__tip,
   .reports .panel__link,
@@ -603,6 +769,10 @@
   }
   .report-head__range span {
     color: var(--graphite);
+  }
+  .report-head__filters {
+    font-weight: 650;
+    color: var(--magenta-ink);
   }
   .report-head__print {
     display: flex;
